@@ -1,0 +1,200 @@
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+
+export function useServerSync() {
+  const { currentSessionId, setCurrentSessionId, connectionStatus, setConnectionStatus } = useServerSync({ initialSessionId, endpoint });
+  const [tooltipSessionActive, setTooltipSessionActive] = useState(false);
+  const tooltipSessionTimerRef = useRef<ReturnType<typeof originalSetTimeout> | null>(
+    null,
+  );
+  const handleControlsMouseEnter = () => {
+    if (!tooltipSessionActive) {
+      tooltipSessionTimerRef.current = originalSetTimeout(
+        () => setTooltipSessionActive(true),
+        850,
+      );
+    }
+  };
+  const handleControlsMouseLeave = () => {
+    if (tooltipSessionTimerRef.current) {
+      clearTimeout(tooltipSessionTimerRef.current);
+      tooltipSessionTimerRef.current = null;
+    }
+    setTooltipSessionActive(false);
+    showTooltipsAgain();
+  };
+  const sessionInitializedRef = useRef(false);
+  const prevConnectionStatusRef = useRef<typeof connectionStatus | null>(null);
+  const fireWebhook = useCallback(
+    async (
+      event: string,
+      payload: Record<string, unknown>,
+      force?: boolean,
+    ): Promise<boolean> => {
+      // Settings webhookUrl overrides prop
+      const targetUrl = settings.webhookUrl || webhookUrl;
+      // Skip if no URL, or if webhooks disabled (unless force is true for manual sends)
+      if (!targetUrl || (!settings.webhooksEnabled && !force)) return false;
+
+      try {
+        const response = await fetch(targetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event,
+            timestamp: Date.now(),
+            url:
+              typeof window !== "undefined" ? window.location.href : undefined,
+            ...payload,
+          }),
+        });
+        return response.ok;
+      } catch (error) {
+        console.warn("[Agentation] Webhook failed:", error);
+        return false;
+      }
+    },
+    [webhookUrl, settings.webhookUrl, settings.webhooksEnabled],
+  );
+  useEffect(() => {
+    return () => {
+      if (tooltipSessionTimerRef.current)
+        clearTimeout(tooltipSessionTimerRef.current);
+    };
+  }, []);
+  useEffect(() => {
+    if (!endpoint || !mounted) return;
+
+    const checkHealth = async () => {
+      try {
+        const response = await fetch(`${endpoint}/health`);
+        if (response.ok) {
+          setConnectionStatus("connected");
+        } else {
+          setConnectionStatus("disconnected");
+        }
+      } catch {
+        setConnectionStatus("disconnected");
+      }
+    };
+
+    // Check immediately, then every 10 seconds
+    checkHealth();
+    const interval = originalSetInterval(checkHealth, 10000);
+    return () => clearInterval(interval);
+  }, [endpoint, mounted]);
+  useEffect(() => {
+    if (!dragStartPos) return;
+
+    const DRAG_THRESHOLD = 10; // pixels
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartPos.x;
+      const deltaY = e.clientY - dragStartPos.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // Start dragging once threshold is exceeded
+      if (!isDraggingToolbar && distance > DRAG_THRESHOLD) {
+        setIsDraggingToolbar(true);
+      }
+
+      if (isDraggingToolbar || distance > DRAG_THRESHOLD) {
+        // Calculate new position
+        let newX = dragStartPos.toolbarX + deltaX;
+        let newY = dragStartPos.toolbarY + deltaY;
+
+        // Constrain to viewport
+        const padding = 20;
+        const wrapperWidth = 337; // .toolbar wrapper width
+        const toolbarHeight = 44;
+
+        // Content is right-aligned within wrapper via margin-left: auto
+        // Calculate content width based on state
+        const contentWidth = isActive
+          ? connectionStatus === "connected"
+            ? 297
+            : 257
+          : 44; // collapsed circle
+
+        // Content offset from wrapper left edge
+        const contentOffset = wrapperWidth - contentWidth;
+
+        // Min X: content left edge >= padding
+        const minX = padding - contentOffset;
+        // Max X: wrapper right edge <= viewport - padding
+        const maxX = window.innerWidth - padding - wrapperWidth;
+
+        newX = Math.max(minX, Math.min(maxX, newX));
+        newY = Math.max(
+          padding,
+          Math.min(window.innerHeight - toolbarHeight - padding, newY),
+        );
+
+        setToolbarPosition({ x: newX, y: newY });
+      }
+    };
+
+    const handleMouseUp = () => {
+      // If we were actually dragging, set flag to prevent click event
+      if (isDraggingToolbar) {
+        justFinishedToolbarDragRef.current = true;
+      }
+      setIsDraggingToolbar(false);
+      setDragStartPos(null);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragStartPos, isDraggingToolbar, isActive, connectionStatus]);
+  useEffect(() => {
+    if (!toolbarPosition) return;
+
+    const constrainPosition = () => {
+      const padding = 20;
+      const wrapperWidth = 337; // .toolbar wrapper width
+      const toolbarHeight = 44;
+
+      let newX = toolbarPosition.x;
+      let newY = toolbarPosition.y;
+
+      // Content is right-aligned within wrapper via margin-left: auto
+      // Calculate content width based on state
+      const contentWidth = isActive
+        ? connectionStatus === "connected"
+          ? 297
+          : 257
+        : 44; // collapsed circle
+
+      // Content offset from wrapper left edge
+      const contentOffset = wrapperWidth - contentWidth;
+
+      // Min X: content left edge >= padding
+      const minX = padding - contentOffset;
+      // Max X: wrapper right edge <= viewport - padding
+      const maxX = window.innerWidth - padding - wrapperWidth;
+
+      newX = Math.max(minX, Math.min(maxX, newX));
+      newY = Math.max(
+        padding,
+        Math.min(window.innerHeight - toolbarHeight - padding, newY),
+      );
+
+      // Only update if position changed
+      if (newX !== toolbarPosition.x || newY !== toolbarPosition.y) {
+        setToolbarPosition({ x: newX, y: newY });
+      }
+    };
+
+    // Constrain immediately when isActive changes or on mount
+    constrainPosition();
+
+    window.addEventListener("resize", constrainPosition);
+    return () => window.removeEventListener("resize", constrainPosition);
+  }, [toolbarPosition, isActive, connectionStatus]);
+
+  return {};
+}

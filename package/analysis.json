@@ -1,0 +1,868 @@
+{
+  "vars": [
+    {
+      "text": "const [isActive, setIsActive] = useState(false);",
+      "names": [
+        "[isActive, setIsActive]"
+      ]
+    },
+    {
+      "text": "const [annotations, setAnnotations] = useState<Annotation[]>([]);",
+      "names": [
+        "[annotations, setAnnotations]"
+      ]
+    },
+    {
+      "text": "const [showMarkers, setShowMarkers] = useState(true);",
+      "names": [
+        "[showMarkers, setShowMarkers]"
+      ]
+    },
+    {
+      "text": "const [isToolbarHidden, setIsToolbarHidden] = useState(() => loadToolbarHidden());",
+      "names": [
+        "[isToolbarHidden, setIsToolbarHidden]"
+      ]
+    },
+    {
+      "text": "const [isToolbarHiding, setIsToolbarHiding] = useState(false);",
+      "names": [
+        "[isToolbarHiding, setIsToolbarHiding]"
+      ]
+    },
+    {
+      "text": "const portalWrapperRef = useRef<HTMLDivElement>(null);",
+      "names": [
+        "portalWrapperRef"
+      ]
+    },
+    {
+      "text": "const [markersVisible, setMarkersVisible] = useState(false);",
+      "names": [
+        "[markersVisible, setMarkersVisible]"
+      ]
+    },
+    {
+      "text": "const [markersExiting, setMarkersExiting] = useState(false);",
+      "names": [
+        "[markersExiting, setMarkersExiting]"
+      ]
+    },
+    {
+      "text": "const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);",
+      "names": [
+        "[hoverInfo, setHoverInfo]"
+      ]
+    },
+    {
+      "text": "const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });",
+      "names": [
+        "[hoverPosition, setHoverPosition]"
+      ]
+    },
+    {
+      "text": "const [pendingAnnotation, setPendingAnnotation] = useState<{\r\n    x: number;\r\n    y: number;\r\n    clientY: number;\r\n    element: string;\r\n    elementPath: string;\r\n    selectedText?: string;\r\n    boundingBox?: { x: number; y: number; width: number; height: number };\r\n    nearbyText?: string;\r\n    cssClasses?: string;\r\n    isMultiSelect?: boolean;\r\n    isFixed?: boolean;\r\n    fullPath?: string;\r\n    accessibility?: string;\r\n    computedStyles?: string;\r\n    computedStylesObj?: Record<string, string>;\r\n    nearbyElements?: string;\r\n    reactComponents?: string;\r\n    sourceFile?: string;\r\n    elementBoundingBoxes?: Array<{\r\n      x: number;\r\n      y: number;\r\n      width: number;\r\n      height: number;\r\n    }>;\r\n    // Element references for cmd+shift+click multi-select (for live position queries)\r\n    multiSelectElements?: HTMLElement[];\r\n    // Element reference for single-select (for live position queries)\r\n    targetElement?: HTMLElement;\r\n    // Context Collectors\r\n    // Context now captured at annotation creation time in addAnnotation\r\n  } | null>(null);",
+      "names": [
+        "[pendingAnnotation, setPendingAnnotation]"
+      ]
+    },
+    {
+      "text": "const [copied, setCopied] = useState(false);",
+      "names": [
+        "[copied, setCopied]"
+      ]
+    },
+    {
+      "text": "const [sendState, setSendState] = useState<\r\n    \"idle\" | \"sending\" | \"sent\" | \"failed\"\r\n  >(\"idle\");",
+      "names": [
+        "[sendState, setSendState]"
+      ]
+    },
+    {
+      "text": "const [cleared, setCleared] = useState(false);",
+      "names": [
+        "[cleared, setCleared]"
+      ]
+    },
+    {
+      "text": "const [isClearing, setIsClearing] = useState(false);",
+      "names": [
+        "[isClearing, setIsClearing]"
+      ]
+    },
+    {
+      "text": "const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);",
+      "names": [
+        "[hoveredMarkerId, setHoveredMarkerId]"
+      ]
+    },
+    {
+      "text": "const [hoveredTargetElement, setHoveredTargetElement] =\r\n    useState<HTMLElement | null>(null);",
+      "names": [
+        "[hoveredTargetElement, setHoveredTargetElement]"
+      ]
+    },
+    {
+      "text": "const [hoveredTargetElements, setHoveredTargetElements] = useState<\r\n    HTMLElement[]\r\n  >([]);",
+      "names": [
+        "[hoveredTargetElements, setHoveredTargetElements]"
+      ]
+    },
+    {
+      "text": "const [deletingMarkerId, setDeletingMarkerId] = useState<string | null>(null);",
+      "names": [
+        "[deletingMarkerId, setDeletingMarkerId]"
+      ]
+    },
+    {
+      "text": "const [renumberFrom, setRenumberFrom] = useState<number | null>(null);",
+      "names": [
+        "[renumberFrom, setRenumberFrom]"
+      ]
+    },
+    {
+      "text": "const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(\r\n    null,\r\n  );",
+      "names": [
+        "[editingAnnotation, setEditingAnnotation]"
+      ]
+    },
+    {
+      "text": "const [editingTargetElement, setEditingTargetElement] =\r\n    useState<HTMLElement | null>(null);",
+      "names": [
+        "[editingTargetElement, setEditingTargetElement]"
+      ]
+    },
+    {
+      "text": "const [editingTargetElements, setEditingTargetElements] = useState<\r\n    HTMLElement[]\r\n  >([]);",
+      "names": [
+        "[editingTargetElements, setEditingTargetElements]"
+      ]
+    },
+    {
+      "text": "const [scrollY, setScrollY] = useState(0);",
+      "names": [
+        "[scrollY, setScrollY]"
+      ]
+    },
+    {
+      "text": "const [isScrolling, setIsScrolling] = useState(false);",
+      "names": [
+        "[isScrolling, setIsScrolling]"
+      ]
+    },
+    {
+      "text": "const [mounted, setMounted] = useState(false);",
+      "names": [
+        "[mounted, setMounted]"
+      ]
+    },
+    {
+      "text": "const [isFrozen, setIsFrozen] = useState(false);",
+      "names": [
+        "[isFrozen, setIsFrozen]"
+      ]
+    },
+    {
+      "text": "const [showSettings, setShowSettings] = useState(false);",
+      "names": [
+        "[showSettings, setShowSettings]"
+      ]
+    },
+    {
+      "text": "const [showSettingsVisible, setShowSettingsVisible] = useState(false);",
+      "names": [
+        "[showSettingsVisible, setShowSettingsVisible]"
+      ]
+    },
+    {
+      "text": "const [settingsPage, setSettingsPage] = useState<\"main\" | \"automations\">(\r\n    \"main\",\r\n  );",
+      "names": [
+        "[settingsPage, setSettingsPage]"
+      ]
+    },
+    {
+      "text": "const [tooltipsHidden, setTooltipsHidden] = useState(false);",
+      "names": [
+        "[tooltipsHidden, setTooltipsHidden]"
+      ]
+    },
+    {
+      "text": "const [isDesignMode, setIsDesignMode] = useState(false);",
+      "names": [
+        "[isDesignMode, setIsDesignMode]"
+      ]
+    },
+    {
+      "text": "const [designOverlayExiting, setDesignOverlayExiting] = useState(false);",
+      "names": [
+        "[designOverlayExiting, setDesignOverlayExiting]"
+      ]
+    },
+    {
+      "text": "const [designPlacements, setDesignPlacements] = useState<DesignPlacement[]>([]);",
+      "names": [
+        "[designPlacements, setDesignPlacements]"
+      ]
+    },
+    {
+      "text": "const [activeDesignComponent, setActiveDesignComponent] = useState<DesignComponentType | null>(null);",
+      "names": [
+        "[activeDesignComponent, setActiveDesignComponent]"
+      ]
+    },
+    {
+      "text": "const designPlacementsLoaded = useRef(false);",
+      "names": [
+        "designPlacementsLoaded"
+      ]
+    },
+    {
+      "text": "const [blankCanvas, setBlankCanvas] = useState(false);",
+      "names": [
+        "[blankCanvas, setBlankCanvas]"
+      ]
+    },
+    {
+      "text": "const [canvasReady, setCanvasReady] = useState(false);",
+      "names": [
+        "[canvasReady, setCanvasReady]"
+      ]
+    },
+    {
+      "text": "const [canvasOpacity, setCanvasOpacity] = useState(1);",
+      "names": [
+        "[canvasOpacity, setCanvasOpacity]"
+      ]
+    },
+    {
+      "text": "const [canvasPurpose, setCanvasPurpose] = useState<import(\"../design-mode/types\").CanvasPurpose>(\"new-page\");",
+      "names": [
+        "[canvasPurpose, setCanvasPurpose]"
+      ]
+    },
+    {
+      "text": "const [wireframePurpose, setWireframePurpose] = useState(\"\");",
+      "names": [
+        "[wireframePurpose, setWireframePurpose]"
+      ]
+    },
+    {
+      "text": "const [designInteracting, setDesignInteracting] = useState(false);",
+      "names": [
+        "[designInteracting, setDesignInteracting]"
+      ]
+    },
+    {
+      "text": "const [rearrangeState, setRearrangeState] = useState<RearrangeState | null>(null);",
+      "names": [
+        "[rearrangeState, setRearrangeState]"
+      ]
+    },
+    {
+      "text": "const rearrangeLoaded = useRef(false);",
+      "names": [
+        "rearrangeLoaded"
+      ]
+    },
+    {
+      "text": "const exploreStashRef = useRef<{ rearrange: RearrangeState | null; placements: DesignPlacement[] }>({ rearrange: null, placements: [] });",
+      "names": [
+        "exploreStashRef"
+      ]
+    },
+    {
+      "text": "const wireframeStashRef = useRef<{ rearrange: RearrangeState | null; placements: DesignPlacement[] }>({ rearrange: null, placements: [] });",
+      "names": [
+        "wireframeStashRef"
+      ]
+    },
+    {
+      "text": "const [designDeselectSignal, setDesignDeselectSignal] = useState(0);",
+      "names": [
+        "[designDeselectSignal, setDesignDeselectSignal]"
+      ]
+    },
+    {
+      "text": "const [rearrangeDeselectSignal, setRearrangeDeselectSignal] = useState(0);",
+      "names": [
+        "[rearrangeDeselectSignal, setRearrangeDeselectSignal]"
+      ]
+    },
+    {
+      "text": "const [designClearSignal, setDesignClearSignal] = useState(0);",
+      "names": [
+        "[designClearSignal, setDesignClearSignal]"
+      ]
+    },
+    {
+      "text": "const [rearrangeClearSignal, setRearrangeClearSignal] = useState(0);",
+      "names": [
+        "[rearrangeClearSignal, setRearrangeClearSignal]"
+      ]
+    },
+    {
+      "text": "const designSelectedIdsRef = useRef<Set<string>>(new Set());",
+      "names": [
+        "designSelectedIdsRef"
+      ]
+    },
+    {
+      "text": "const rearrangeSelectedIdsRef = useRef<Set<string>>(new Set());",
+      "names": [
+        "rearrangeSelectedIdsRef"
+      ]
+    },
+    {
+      "text": "const crossDragStartRef = useRef<Map<string, { x: number; y: number }> | null>(null);",
+      "names": [
+        "crossDragStartRef"
+      ]
+    },
+    {
+      "text": "const designExitTimer = useRef<ReturnType<typeof originalSetTimeout>>();",
+      "names": [
+        "designExitTimer"
+      ]
+    },
+    {
+      "text": "const canvasShouldBeVisible = isDesignMode && isActive && !designOverlayExiting && blankCanvas;",
+      "names": [
+        "canvasShouldBeVisible"
+      ]
+    },
+    {
+      "text": "const placementAnnotationMap = useRef(new Map<string, string>());",
+      "names": [
+        "placementAnnotationMap"
+      ]
+    },
+    {
+      "text": "const rearrangeAnnotationMap = useRef(new Map<string, string>());",
+      "names": [
+        "rearrangeAnnotationMap"
+      ]
+    },
+    {
+      "text": "const rearrangeDebounceTimer = useRef<ReturnType<typeof originalSetTimeout>>();",
+      "names": [
+        "rearrangeDebounceTimer"
+      ]
+    },
+    {
+      "text": "const [isDrawMode, setIsDrawMode] = useState(false);",
+      "names": [
+        "[isDrawMode, setIsDrawMode]"
+      ]
+    },
+    {
+      "text": "const [drawStrokes, setDrawStrokes] = useState<Array<{ id: string; points: Array<{x: number, y: number}>; color: string; fixed: boolean }>>([]);",
+      "names": [
+        "[drawStrokes, setDrawStrokes]"
+      ]
+    },
+    {
+      "text": "const drawStrokesRef = useRef(drawStrokes);",
+      "names": [
+        "drawStrokesRef"
+      ]
+    },
+    {
+      "text": "const [hoveredDrawingIdx, setHoveredDrawingIdx] = useState<number | null>(null);",
+      "names": [
+        "[hoveredDrawingIdx, setHoveredDrawingIdx]"
+      ]
+    },
+    {
+      "text": "const drawCanvasRef = useRef<HTMLCanvasElement>(null);",
+      "names": [
+        "drawCanvasRef"
+      ]
+    },
+    {
+      "text": "const isDrawingRef = useRef(false);",
+      "names": [
+        "isDrawingRef"
+      ]
+    },
+    {
+      "text": "const currentStrokeRef = useRef<Array<{x: number, y: number}>>([]);",
+      "names": [
+        "currentStrokeRef"
+      ]
+    },
+    {
+      "text": "const dimAmountRef = useRef(0);",
+      "names": [
+        "dimAmountRef"
+      ]
+    },
+    {
+      "text": "const visualHighlightRef = useRef<number | null>(null);",
+      "names": [
+        "visualHighlightRef"
+      ]
+    },
+    {
+      "text": "const exitingStrokeIdRef = useRef<string | null>(null);",
+      "names": [
+        "exitingStrokeIdRef"
+      ]
+    },
+    {
+      "text": "const exitingAlphaRef = useRef(1);",
+      "names": [
+        "exitingAlphaRef"
+      ]
+    },
+    {
+      "text": "const [tooltipSessionActive, setTooltipSessionActive] = useState(false);",
+      "names": [
+        "[tooltipSessionActive, setTooltipSessionActive]"
+      ]
+    },
+    {
+      "text": "const tooltipSessionTimerRef = useRef<ReturnType<typeof originalSetTimeout> | null>(\r\n    null,\r\n  );",
+      "names": [
+        "tooltipSessionTimerRef"
+      ]
+    },
+    {
+      "text": "const [pendingMultiSelectElements, setPendingMultiSelectElements] = useState<\r\n    Array<{\r\n      element: HTMLElement;\r\n      rect: DOMRect;\r\n      name: string;\r\n      path: string;\r\n      reactComponents?: string;\r\n    }>\r\n  >([]);",
+      "names": [
+        "[pendingMultiSelectElements, setPendingMultiSelectElements]"
+      ]
+    },
+    {
+      "text": "const modifiersHeldRef = useRef({ cmd: false, shift: false });",
+      "names": [
+        "modifiersHeldRef"
+      ]
+    },
+    {
+      "text": "const hideTooltipsUntilMouseLeave = () => {\r\n    setTooltipsHidden(true);\r\n  };",
+      "names": [
+        "hideTooltipsUntilMouseLeave"
+      ]
+    },
+    {
+      "text": "const showTooltipsAgain = () => {\r\n    setTooltipsHidden(false);\r\n  };",
+      "names": [
+        "showTooltipsAgain"
+      ]
+    },
+    {
+      "text": "const handleControlsMouseEnter = () => {\r\n    if (!tooltipSessionActive) {\r\n      tooltipSessionTimerRef.current = originalSetTimeout(\r\n        () => setTooltipSessionActive(true),\r\n        850,\r\n      );\r\n    }\r\n  };",
+      "names": [
+        "handleControlsMouseEnter"
+      ]
+    },
+    {
+      "text": "const handleControlsMouseLeave = () => {\r\n    if (tooltipSessionTimerRef.current) {\r\n      clearTimeout(tooltipSessionTimerRef.current);\r\n      tooltipSessionTimerRef.current = null;\r\n    }\r\n    setTooltipSessionActive(false);\r\n    showTooltipsAgain();\r\n  };",
+      "names": [
+        "handleControlsMouseLeave"
+      ]
+    },
+    {
+      "text": "const [settings, setSettings] = useState<ToolbarSettings>(() => {\r\n  try {\r\n    const saved = JSON.parse(localStorage.getItem(\"feedback-toolbar-settings\") ?? \"\");\r\n    return {\r\n      ...DEFAULT_SETTINGS,\r\n      ...saved,\r\n      annotationColorId: COLOR_OPTIONS.find(c => c.id === saved.annotationColorId)\r\n        ? saved.annotationColorId\r\n        : DEFAULT_SETTINGS.annotationColorId,\r\n    };\r\n  } catch {\r\n    return DEFAULT_SETTINGS;\r\n  }\r\n});",
+      "names": [
+        "[settings, setSettings]"
+      ]
+    },
+    {
+      "text": "const [isDarkMode, setIsDarkMode] = useState(true);",
+      "names": [
+        "[isDarkMode, setIsDarkMode]"
+      ]
+    },
+    {
+      "text": "const [showEntranceAnimation, setShowEntranceAnimation] = useState(false);",
+      "names": [
+        "[showEntranceAnimation, setShowEntranceAnimation]"
+      ]
+    },
+    {
+      "text": "const toggleTheme = () => {\r\n    portalWrapperRef.current?.classList.add(styles.disableTransitions);\r\n    setIsDarkMode((previous) => !previous);\r\n    originalRequestAnimationFrame(() => {\r\n      portalWrapperRef.current?.classList.remove(styles.disableTransitions);\r\n    });\r\n  }",
+      "names": [
+        "toggleTheme"
+      ]
+    },
+    {
+      "text": "const isDevMode = process.env.NODE_ENV === \"development\";",
+      "names": [
+        "isDevMode"
+      ]
+    },
+    {
+      "text": "const effectiveReactMode: ReactComponentMode =\r\n    isDevMode && settings.reactEnabled\r\n      ? OUTPUT_TO_REACT_MODE[settings.outputDetail]\r\n      : \"off\";",
+      "names": [
+        "effectiveReactMode"
+      ]
+    },
+    {
+      "text": "const [currentSessionId, setCurrentSessionId] = useState<string | null>(\r\n    initialSessionId ?? null,\r\n  );",
+      "names": [
+        "[currentSessionId, setCurrentSessionId]"
+      ]
+    },
+    {
+      "text": "const sessionInitializedRef = useRef(false);",
+      "names": [
+        "sessionInitializedRef"
+      ]
+    },
+    {
+      "text": "const [connectionStatus, setConnectionStatus] = useState<\r\n    \"disconnected\" | \"connecting\" | \"connected\"\r\n  >(endpoint ? \"connecting\" : \"disconnected\");",
+      "names": [
+        "[connectionStatus, setConnectionStatus]"
+      ]
+    },
+    {
+      "text": "const [toolbarPosition, setToolbarPosition] = useState<{\r\n    x: number;\r\n    y: number;\r\n  } | null>(null);",
+      "names": [
+        "[toolbarPosition, setToolbarPosition]"
+      ]
+    },
+    {
+      "text": "const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);",
+      "names": [
+        "[isDraggingToolbar, setIsDraggingToolbar]"
+      ]
+    },
+    {
+      "text": "const [dragStartPos, setDragStartPos] = useState<{\r\n    x: number;\r\n    y: number;\r\n    toolbarX: number;\r\n    toolbarY: number;\r\n  } | null>(null);",
+      "names": [
+        "[dragStartPos, setDragStartPos]"
+      ]
+    },
+    {
+      "text": "const justFinishedToolbarDragRef = useRef(false);",
+      "names": [
+        "justFinishedToolbarDragRef"
+      ]
+    },
+    {
+      "text": "const [animatedMarkers, setAnimatedMarkers] = useState<Set<string>>(\r\n    new Set(),\r\n  );",
+      "names": [
+        "[animatedMarkers, setAnimatedMarkers]"
+      ]
+    },
+    {
+      "text": "const [exitingMarkers, setExitingMarkers] = useState<Set<string>>(new Set());",
+      "names": [
+        "[exitingMarkers, setExitingMarkers]"
+      ]
+    },
+    {
+      "text": "const [pendingExiting, setPendingExiting] = useState(false);",
+      "names": [
+        "[pendingExiting, setPendingExiting]"
+      ]
+    },
+    {
+      "text": "const [editExiting, setEditExiting] = useState(false);",
+      "names": [
+        "[editExiting, setEditExiting]"
+      ]
+    },
+    {
+      "text": "const [isDragging, setIsDragging] = useState(false);",
+      "names": [
+        "[isDragging, setIsDragging]"
+      ]
+    },
+    {
+      "text": "const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);",
+      "names": [
+        "mouseDownPosRef"
+      ]
+    },
+    {
+      "text": "const dragStartRef = useRef<{ x: number; y: number } | null>(null);",
+      "names": [
+        "dragStartRef"
+      ]
+    },
+    {
+      "text": "const dragRectRef = useRef<HTMLDivElement | null>(null);",
+      "names": [
+        "dragRectRef"
+      ]
+    },
+    {
+      "text": "const highlightsContainerRef = useRef<HTMLDivElement | null>(null);",
+      "names": [
+        "highlightsContainerRef"
+      ]
+    },
+    {
+      "text": "const justFinishedDragRef = useRef(false);",
+      "names": [
+        "justFinishedDragRef"
+      ]
+    },
+    {
+      "text": "const lastElementUpdateRef = useRef(0);",
+      "names": [
+        "lastElementUpdateRef"
+      ]
+    },
+    {
+      "text": "const recentlyAddedIdRef = useRef<string | null>(null);",
+      "names": [
+        "recentlyAddedIdRef"
+      ]
+    },
+    {
+      "text": "const prevConnectionStatusRef = useRef<typeof connectionStatus | null>(null);",
+      "names": [
+        "prevConnectionStatusRef"
+      ]
+    },
+    {
+      "text": "const DRAG_THRESHOLD = 8;",
+      "names": [
+        "DRAG_THRESHOLD"
+      ]
+    },
+    {
+      "text": "const ELEMENT_UPDATE_THROTTLE = 50;",
+      "names": [
+        "ELEMENT_UPDATE_THROTTLE"
+      ]
+    },
+    {
+      "text": "const popupRef = useRef<AnnotationPopupCSSHandle>(null);",
+      "names": [
+        "popupRef"
+      ]
+    },
+    {
+      "text": "const editPopupRef = useRef<AnnotationPopupCSSHandle>(null);",
+      "names": [
+        "editPopupRef"
+      ]
+    },
+    {
+      "text": "const scrollTimeoutRef = useRef<ReturnType<typeof originalSetTimeout> | null>(null);",
+      "names": [
+        "scrollTimeoutRef"
+      ]
+    },
+    {
+      "text": "const pathname =\r\n    typeof window !== \"undefined\" ? window.location.pathname : \"/\";",
+      "names": [
+        "pathname"
+      ]
+    },
+    {
+      "text": "const shouldShowMarkers = isActive && showMarkers && !isDesignMode;",
+      "names": [
+        "shouldShowMarkers"
+      ]
+    },
+    {
+      "text": "const prevDraggingRef = useRef(false);",
+      "names": [
+        "prevDraggingRef"
+      ]
+    },
+    {
+      "text": "const hideToolbarTemporarily = useCallback(() => {\r\n    if (isToolbarHiding) return;\r\n    setIsToolbarHiding(true);\r\n    setShowSettings(false);\r\n    setIsActive(false);\r\n    originalSetTimeout(() => {\r\n      saveToolbarHidden(true);\r\n      setIsToolbarHidden(true);\r\n      setIsToolbarHiding(false);\r\n    }, 400);\r\n  }, [isToolbarHiding]);",
+      "names": [
+        "hideToolbarTemporarily"
+      ]
+    },
+    {
+      "text": "const wireframeLoaded = useRef(false);",
+      "names": [
+        "wireframeLoaded"
+      ]
+    },
+    {
+      "text": "const rearrangeMovedEls = useRef<Map<string, MovedEntry>>(new Map());",
+      "names": [
+        "rearrangeMovedEls"
+      ]
+    },
+    {
+      "text": "const closeDesignMode = useCallback(() => {\r\n    setDesignOverlayExiting(true);\r\n    setIsDesignMode(false);\r\n    setActiveDesignComponent(null);\r\n    // Don't reset subMode here — it causes a crossfade during exit animation.\r\n    // It stays on the last-used tab for next time.\r\n    clearTimeout(designExitTimer.current);\r\n    designExitTimer.current = originalSetTimeout(() => {\r\n      setDesignOverlayExiting(false);\r\n    }, 300);\r\n  }, []);",
+      "names": [
+        "closeDesignMode"
+      ]
+    },
+    {
+      "text": "const deactivate = useCallback(() => {\r\n    if (isDesignMode) {\r\n      setDesignOverlayExiting(true);\r\n      setIsDesignMode(false);\r\n      setActiveDesignComponent(null);\r\n      clearTimeout(designExitTimer.current);\r\n      designExitTimer.current = originalSetTimeout(() => {\r\n        setDesignOverlayExiting(false);\r\n      }, 300);\r\n    }\r\n    setIsActive(false);\r\n  }, [isDesignMode]);",
+      "names": [
+        "deactivate"
+      ]
+    },
+    {
+      "text": "const freezeAnimations = useCallback(() => {\r\n    if (isFrozen) return;\r\n    freezeAll();\r\n    setIsFrozen(true);\r\n  }, [isFrozen]);",
+      "names": [
+        "freezeAnimations"
+      ]
+    },
+    {
+      "text": "const unfreezeAnimations = useCallback(() => {\r\n    if (!isFrozen) return;\r\n    unfreezeAll();\r\n    setIsFrozen(false);\r\n  }, [isFrozen]);",
+      "names": [
+        "unfreezeAnimations"
+      ]
+    },
+    {
+      "text": "const toggleFreeze = useCallback(() => {\r\n    if (isFrozen) {\r\n      unfreezeAnimations();\r\n    } else {\r\n      freezeAnimations();\r\n    }\r\n  }, [isFrozen, freezeAnimations, unfreezeAnimations]);",
+      "names": [
+        "toggleFreeze"
+      ]
+    },
+    {
+      "text": "const createMultiSelectPendingAnnotation = useCallback(() => {\r\n    if (pendingMultiSelectElements.length === 0) return;\r\n\r\n    const firstItem = pendingMultiSelectElements[0];\r\n    const firstEl = firstItem.element;\r\n    const isMulti = pendingMultiSelectElements.length > 1;\r\n\r\n    // Get fresh rects for all elements\r\n    const freshRects = pendingMultiSelectElements.map((item) =>\r\n      item.element.getBoundingClientRect(),\r\n    );\r\n\r\n    if (!isMulti) {\r\n      // Single element - treat as regular annotation (not multi-select)\r\n      const rect = freshRects[0];\r\n      const isFixed = isElementFixed(firstEl);\r\n\r\n      setPendingAnnotation({\r\n        x: (rect.left / window.innerWidth) * 100,\r\n        y: isFixed ? rect.top : rect.top + window.scrollY,\r\n        clientY: rect.top,\r\n        element: firstItem.name,\r\n        elementPath: firstItem.path,\r\n        boundingBox: {\r\n          x: rect.left,\r\n          y: isFixed ? rect.top : rect.top + window.scrollY,\r\n          width: rect.width,\r\n          height: rect.height,\r\n        },\r\n        isFixed,\r\n        fullPath: getFullElementPath(firstEl),\r\n        accessibility: getAccessibilityInfo(firstEl),\r\n        computedStyles: getForensicComputedStyles(firstEl),\r\n        computedStylesObj: getDetailedComputedStyles(firstEl),\r\n        nearbyElements: getNearbyElements(firstEl),\r\n        cssClasses: getElementClasses(firstEl),\r\n        nearbyText: getNearbyText(firstEl),\r\n        reactComponents: firstItem.reactComponents || undefined,\r\n        sourceFile: detectSourceFile(firstEl),\r\n        // Context captured at annotation creation time in addAnnotation\r\n      });\r\n    } else {\r\n      // Multiple elements - multi-select annotation\r\n      const bounds = {\r\n        left: Math.min(...freshRects.map((r) => r.left)),\r\n        top: Math.min(...freshRects.map((r) => r.top)),\r\n        right: Math.max(...freshRects.map((r) => r.right)),\r\n        bottom: Math.max(...freshRects.map((r) => r.bottom)),\r\n      };\r\n\r\n      const names = pendingMultiSelectElements\r\n        .slice(0, 5)\r\n        .map((item) => item.name)\r\n        .join(\", \");\r\n      const suffix =\r\n        pendingMultiSelectElements.length > 5\r\n          ? ` +${pendingMultiSelectElements.length - 5} more`\r\n          : \"\";\r\n\r\n      const elementBoundingBoxes = freshRects.map((rect) => ({\r\n        x: rect.left,\r\n        y: rect.top + window.scrollY,\r\n        width: rect.width,\r\n        height: rect.height,\r\n      }));\r\n\r\n      // Position marker near the last selected element (most recent click)\r\n      const lastItem = pendingMultiSelectElements[pendingMultiSelectElements.length - 1];\r\n      const lastEl = lastItem.element;\r\n      const lastRect = freshRects[freshRects.length - 1];\r\n      const lastCenterX = lastRect.left + lastRect.width / 2;\r\n      const lastCenterY = lastRect.top + lastRect.height / 2;\r\n      const lastIsFixed = isElementFixed(lastEl);\r\n\r\n      setPendingAnnotation({\r\n        x: (lastCenterX / window.innerWidth) * 100,\r\n        y: lastIsFixed ? lastCenterY : lastCenterY + window.scrollY,\r\n        clientY: lastCenterY,\r\n        element: `${pendingMultiSelectElements.length} elements: ${names}${suffix}`,\r\n        elementPath: \"multi-select\",\r\n        boundingBox: {\r\n          x: bounds.left,\r\n          y: bounds.top + window.scrollY,\r\n          width: bounds.right - bounds.left,\r\n          height: bounds.bottom - bounds.top,\r\n        },\r\n        isMultiSelect: true,\r\n        isFixed: lastIsFixed,\r\n        elementBoundingBoxes,\r\n        multiSelectElements: pendingMultiSelectElements.map((item) => item.element),\r\n        targetElement: lastEl, // Anchor marker/popup to last clicked element\r\n        fullPath: getFullElementPath(firstEl),\r\n        accessibility: getAccessibilityInfo(firstEl),\r\n        computedStyles: getForensicComputedStyles(firstEl),\r\n        computedStylesObj: getDetailedComputedStyles(firstEl),\r\n        nearbyElements: getNearbyElements(firstEl),\r\n        cssClasses: getElementClasses(firstEl),\r\n        nearbyText: getNearbyText(firstEl),\r\n        sourceFile: detectSourceFile(firstEl),\r\n        // Context captured at annotation creation time in addAnnotation\r\n      });\r\n    }\r\n\r\n    setPendingMultiSelectElements([]);\r\n    setHoverInfo(null);\r\n  }, [pendingMultiSelectElements]);",
+      "names": [
+        "createMultiSelectPendingAnnotation"
+      ]
+    },
+    {
+      "text": "const startEditAnnotation = useCallback((annotation: Annotation) => {\r\n    setEditingAnnotation(annotation);\r\n    setHoveredMarkerId(null);\r\n    setHoveredTargetElement(null);\r\n    setHoveredTargetElements([]);\r\n\r\n    // Try to find elements at the annotation's position(s) for live tracking\r\n    if (annotation.elementBoundingBoxes?.length) {\r\n      // Cmd+shift+click: find element at each bounding box center\r\n      const elements: HTMLElement[] = [];\r\n      for (const bb of annotation.elementBoundingBoxes) {\r\n        const centerX = bb.x + bb.width / 2;\r\n        const centerY = bb.y + bb.height / 2 - window.scrollY;\r\n        const el = deepElementFromPoint(centerX, centerY);\r\n        if (el) elements.push(el);\r\n      }\r\n      setEditingTargetElements(elements);\r\n      setEditingTargetElement(null);\r\n    } else if (annotation.boundingBox) {\r\n      // Single element\r\n      const bb = annotation.boundingBox;\r\n      const centerX = bb.x + bb.width / 2;\r\n      // Convert document coords to viewport coords (unless fixed)\r\n      const centerY = annotation.isFixed\r\n        ? bb.y + bb.height / 2\r\n        : bb.y + bb.height / 2 - window.scrollY;\r\n      const el = deepElementFromPoint(centerX, centerY);\r\n\r\n      // Validate found element's size roughly matches stored bounding box\r\n      if (el) {\r\n        const elRect = el.getBoundingClientRect();\r\n        const widthRatio = elRect.width / bb.width;\r\n        const heightRatio = elRect.height / bb.height;\r\n        if (widthRatio < 0.5 || heightRatio < 0.5) {\r\n          setEditingTargetElement(null);\r\n        } else {\r\n          setEditingTargetElement(el);\r\n        }\r\n      } else {\r\n        setEditingTargetElement(null);\r\n      }\r\n      setEditingTargetElements([]);\r\n    } else {\r\n      setEditingTargetElement(null);\r\n      setEditingTargetElements([]);\r\n    }\r\n  }, []);",
+      "names": [
+        "startEditAnnotation"
+      ]
+    },
+    {
+      "text": "const fireWebhook = useCallback(\r\n    async (\r\n      event: string,\r\n      payload: Record<string, unknown>,\r\n      force?: boolean,\r\n    ): Promise<boolean> => {\r\n      // Settings webhookUrl overrides prop\r\n      const targetUrl = settings.webhookUrl || webhookUrl;\r\n      // Skip if no URL, or if webhooks disabled (unless force is true for manual sends)\r\n      if (!targetUrl || (!settings.webhooksEnabled && !force)) return false;\r\n\r\n      try {\r\n        const response = await fetch(targetUrl, {\r\n          method: \"POST\",\r\n          headers: { \"Content-Type\": \"application/json\" },\r\n          body: JSON.stringify({\r\n            event,\r\n            timestamp: Date.now(),\r\n            url:\r\n              typeof window !== \"undefined\" ? window.location.href : undefined,\r\n            ...payload,\r\n          }),\r\n        });\r\n        return response.ok;\r\n      } catch (error) {\r\n        console.warn(\"[Agentation] Webhook failed:\", error);\r\n        return false;\r\n      }\r\n    },\r\n    [webhookUrl, settings.webhookUrl, settings.webhooksEnabled],\r\n  );",
+      "names": [
+        "fireWebhook"
+      ]
+    },
+    {
+      "text": "const addAnnotation = useCallback(\r\n    (comment: string) => {\r\n      if (!pendingAnnotation) return;\r\n\r\n      const newAnnotation: Annotation = {\r\n        id: Date.now().toString(),\r\n        x: pendingAnnotation.x,\r\n        y: pendingAnnotation.y,\r\n        comment,\r\n        element: pendingAnnotation.element,\r\n        elementPath: pendingAnnotation.elementPath,\r\n        timestamp: Date.now(),\r\n        selectedText: pendingAnnotation.selectedText,\r\n        boundingBox: pendingAnnotation.boundingBox,\r\n        nearbyText: pendingAnnotation.nearbyText,\r\n        cssClasses: pendingAnnotation.cssClasses,\r\n        isMultiSelect: pendingAnnotation.isMultiSelect,\r\n        isFixed: pendingAnnotation.isFixed,\r\n        fullPath: pendingAnnotation.fullPath,\r\n        accessibility: pendingAnnotation.accessibility,\r\n        computedStyles: pendingAnnotation.computedStyles,\r\n        nearbyElements: pendingAnnotation.nearbyElements,\r\n        reactComponents: pendingAnnotation.reactComponents,\r\n        sourceFile: pendingAnnotation.sourceFile,\r\n        elementBoundingBoxes: pendingAnnotation.elementBoundingBoxes,\r\n        // Attach context from collectors (network, console, state)\r\n        context: (() => {\r\n          const snap = snapshotCollectors();\r\n          const ctx: Annotation[\"context\"] = {};\r\n          if (snap.network.length > 0) {\r\n            ctx.network = snap.network.slice(0, 10).map((n) => ({\r\n              method: n.method,\r\n              url: n.url,\r\n              status: n.status,\r\n              duration: n.duration,\r\n              ...(n.error ? { error: n.error } : {}),\r\n              ...(n.responseBody ? { responseBody: n.responseBody.slice(0, 1000) } : {}),\r\n            }));\r\n          }\r\n          if (snap.console.length > 0) {\r\n            ctx.console = snap.console.slice(0, 10).map((c) => ({\r\n              level: c.level,\r\n              message: c.message.slice(0, 500),\r\n              ...(c.stack ? { stack: c.stack.slice(0, 500) } : {}),\r\n            }));\r\n          }\r\n          if (snap.state.length > 0) {\r\n            ctx.state = snap.state.map((s) => ({\r\n              storeType: s.storeType,\r\n              storeName: s.storeName,\r\n              state: s.state,\r\n            }));\r\n          }\r\n          return Object.keys(ctx).length > 0 ? ctx : undefined;\r\n        })(),\r\n        // Protocol fields for server sync\r\n        ...(endpoint && currentSessionId\r\n          ? {\r\n              sessionId: currentSessionId,\r\n              url:\r\n                typeof window !== \"undefined\"\r\n                  ? window.location.href\r\n                  : undefined,\r\n              status: \"pending\" as const,\r\n            }\r\n          : {}),\r\n      };\r\n\r\n      setAnnotations((prev) => [...prev, newAnnotation]);\r\n      // Prevent immediate hover on newly added marker\r\n      recentlyAddedIdRef.current = newAnnotation.id;\r\n      originalSetTimeout(() => {\r\n        recentlyAddedIdRef.current = null;\r\n      }, 300);\r\n      // Mark as needing animation (will be set to animated after animation completes)\r\n      originalSetTimeout(() => {\r\n        setAnimatedMarkers((prev) => new Set(prev).add(newAnnotation.id));\r\n      }, 250);\r\n\r\n      // Fire callback\r\n      onAnnotationAdd?.(newAnnotation);\r\n      fireWebhook(\"annotation.add\", { annotation: newAnnotation });\r\n\r\n      // Animate out the pending annotation UI\r\n      setPendingExiting(true);\r\n      originalSetTimeout(() => {\r\n        setPendingAnnotation(null);\r\n        setPendingExiting(false);\r\n      }, 150);\r\n\r\n      window.getSelection()?.removeAllRanges();\r\n\r\n      // Sync to server (non-blocking, but update local ID with server's ID)\r\n      if (endpoint && currentSessionId) {\r\n        syncAnnotation(endpoint, currentSessionId, newAnnotation)\r\n          .then((serverAnnotation) => {\r\n            // Update local annotation with server-assigned ID\r\n            if (serverAnnotation.id !== newAnnotation.id) {\r\n              setAnnotations((prev) =>\r\n                prev.map((a) =>\r\n                  a.id === newAnnotation.id\r\n                    ? { ...a, id: serverAnnotation.id }\r\n                    : a,\r\n                ),\r\n              );\r\n              // Also update the animated markers set\r\n              setAnimatedMarkers((prev) => {\r\n                const next = new Set(prev);\r\n                next.delete(newAnnotation.id);\r\n                next.add(serverAnnotation.id);\r\n                return next;\r\n              });\r\n            }\r\n          })\r\n          .catch((error) => {\r\n            console.warn(\"[Agentation] Failed to sync annotation:\", error);\r\n          });\r\n      }\r\n    },\r\n    [\r\n      pendingAnnotation,\r\n      onAnnotationAdd,\r\n      fireWebhook,\r\n      endpoint,\r\n      currentSessionId,\r\n    ],\r\n  );",
+      "names": [
+        "addAnnotation"
+      ]
+    },
+    {
+      "text": "const cancelAnnotation = useCallback(() => {\r\n    setPendingExiting(true);\r\n    originalSetTimeout(() => {\r\n      setPendingAnnotation(null);\r\n      setPendingExiting(false);\r\n    }, 150); // Match exit animation duration\r\n  }, []);",
+      "names": [
+        "cancelAnnotation"
+      ]
+    },
+    {
+      "text": "const deleteAnnotation = useCallback(\r\n    (id: string) => {\r\n      const deletedIndex = annotations.findIndex((a) => a.id === id);\r\n      const deletedAnnotation = annotations[deletedIndex];\r\n\r\n      // Close edit panel with exit animation if deleting the annotation being edited\r\n      if (editingAnnotation?.id === id) {\r\n        setEditExiting(true);\r\n        originalSetTimeout(() => {\r\n          setEditingAnnotation(null);\r\n          setEditingTargetElement(null);\r\n          setEditingTargetElements([]);\r\n          setEditExiting(false);\r\n        }, 150);\r\n      }\r\n\r\n      setDeletingMarkerId(id);\r\n      setExitingMarkers((prev) => new Set(prev).add(id));\r\n\r\n      // Fire callback\r\n      if (deletedAnnotation) {\r\n        onAnnotationDelete?.(deletedAnnotation);\r\n        fireWebhook(\"annotation.delete\", { annotation: deletedAnnotation });\r\n      }\r\n\r\n      // Sync delete to server (non-blocking)\r\n      if (endpoint) {\r\n        deleteAnnotationFromServer(endpoint, id).catch((error) => {\r\n          console.warn(\r\n            \"[Agentation] Failed to delete annotation from server:\",\r\n            error,\r\n          );\r\n        });\r\n      }\r\n\r\n      // Wait for exit animation then remove\r\n      originalSetTimeout(() => {\r\n        setAnnotations((prev) => prev.filter((a) => a.id !== id));\r\n        setExitingMarkers((prev) => {\r\n          const next = new Set(prev);\r\n          next.delete(id);\r\n          return next;\r\n        });\r\n        setDeletingMarkerId(null);\r\n\r\n        // Trigger renumber animation for markers after deleted one\r\n        if (deletedIndex < annotations.length - 1) {\r\n          setRenumberFrom(deletedIndex);\r\n          originalSetTimeout(() => setRenumberFrom(null), 200);\r\n        }\r\n      }, 150);\r\n    },\r\n    [annotations, editingAnnotation, onAnnotationDelete, fireWebhook, endpoint],\r\n  );",
+      "names": [
+        "deleteAnnotation"
+      ]
+    },
+    {
+      "text": "const handleMarkerHover = useCallback(\r\n    (annotation: Annotation | null) => {\r\n      if (!annotation) {\r\n        setHoveredMarkerId(null);\r\n        setHoveredTargetElement(null);\r\n        setHoveredTargetElements([]);\r\n        return;\r\n      }\r\n\r\n      setHoveredMarkerId(annotation.id);\r\n\r\n      // Find elements at the annotation's position(s) for live tracking\r\n      if (annotation.elementBoundingBoxes?.length) {\r\n        // Cmd+shift+click: find element at each bounding box center\r\n        const elements: HTMLElement[] = [];\r\n        for (const bb of annotation.elementBoundingBoxes) {\r\n          const centerX = bb.x + bb.width / 2;\r\n          const centerY = bb.y + bb.height / 2 - window.scrollY;\r\n          // Use elementsFromPoint to look through the marker if it's covering\r\n          const allEls = document.elementsFromPoint(centerX, centerY);\r\n          const el = allEls.find(\r\n            (e) => !e.closest('[data-annotation-marker]') && !e.closest('[data-agentation-root]'),\r\n          ) as HTMLElement | undefined;\r\n          if (el) elements.push(el);\r\n        }\r\n        setHoveredTargetElements(elements);\r\n        setHoveredTargetElement(null);\r\n      } else if (annotation.boundingBox) {\r\n        // Single element\r\n        const bb = annotation.boundingBox;\r\n        const centerX = bb.x + bb.width / 2;\r\n        const centerY = annotation.isFixed\r\n          ? bb.y + bb.height / 2\r\n          : bb.y + bb.height / 2 - window.scrollY;\r\n        const el = deepElementFromPoint(centerX, centerY);\r\n\r\n        // Validate found element's size roughly matches stored bounding box\r\n        // (prevents using wrong child element when clicking center of a container)\r\n        if (el) {\r\n          const elRect = el.getBoundingClientRect();\r\n          const widthRatio = elRect.width / bb.width;\r\n          const heightRatio = elRect.height / bb.height;\r\n          // If found element is much smaller than stored, it's probably a child - don't use it\r\n          if (widthRatio < 0.5 || heightRatio < 0.5) {\r\n            setHoveredTargetElement(null);\r\n          } else {\r\n            setHoveredTargetElement(el);\r\n          }\r\n        } else {\r\n          setHoveredTargetElement(null);\r\n        }\r\n        setHoveredTargetElements([]);\r\n      } else {\r\n        setHoveredTargetElement(null);\r\n        setHoveredTargetElements([]);\r\n      }\r\n    },\r\n    [],\r\n  );",
+      "names": [
+        "handleMarkerHover"
+      ]
+    },
+    {
+      "text": "const updateAnnotation = useCallback(\r\n    (newComment: string) => {\r\n      if (!editingAnnotation) return;\r\n\r\n      const updatedAnnotation = { ...editingAnnotation, comment: newComment };\r\n\r\n      setAnnotations((prev) =>\r\n        prev.map((a) =>\r\n          a.id === editingAnnotation.id ? updatedAnnotation : a,\r\n        ),\r\n      );\r\n\r\n      // Fire callback\r\n      onAnnotationUpdate?.(updatedAnnotation);\r\n      fireWebhook(\"annotation.update\", { annotation: updatedAnnotation });\r\n\r\n      // Sync update to server (non-blocking)\r\n      if (endpoint) {\r\n        updateAnnotationOnServer(endpoint, editingAnnotation.id, {\r\n          comment: newComment,\r\n        }).catch((error) => {\r\n          console.warn(\r\n            \"[Agentation] Failed to update annotation on server:\",\r\n            error,\r\n          );\r\n        });\r\n      }\r\n\r\n      // Animate out the edit popup\r\n      setEditExiting(true);\r\n      originalSetTimeout(() => {\r\n        setEditingAnnotation(null);\r\n        setEditingTargetElement(null);\r\n        setEditingTargetElements([]);\r\n        setEditExiting(false);\r\n      }, 150);\r\n    },\r\n    [editingAnnotation, onAnnotationUpdate, fireWebhook, endpoint],\r\n  );",
+      "names": [
+        "updateAnnotation"
+      ]
+    },
+    {
+      "text": "const cancelEditAnnotation = useCallback(() => {\r\n    setEditExiting(true);\r\n    originalSetTimeout(() => {\r\n      setEditingAnnotation(null);\r\n      setEditingTargetElement(null);\r\n      setEditingTargetElements([]);\r\n      setEditExiting(false);\r\n    }, 150);\r\n  }, []);",
+      "names": [
+        "cancelEditAnnotation"
+      ]
+    },
+    {
+      "text": "const clearAll = useCallback(() => {\r\n    const count = annotations.length;\r\n    const hasDesign = designPlacements.length > 0 || !!rearrangeState;\r\n    if (count === 0 && drawStrokes.length === 0 && !hasDesign) return;\r\n\r\n    // Fire callback with all annotations before clearing\r\n    onAnnotationsClear?.(annotations);\r\n    fireWebhook(\"annotations.clear\", { annotations });\r\n\r\n    // Sync deletions to server (non-blocking)\r\n    if (endpoint) {\r\n      Promise.all(\r\n        annotations.map((a) =>\r\n          deleteAnnotationFromServer(endpoint, a.id).catch((error) => {\r\n            console.warn(\r\n              \"[Agentation] Failed to delete annotation from server:\",\r\n              error,\r\n            );\r\n          }),\r\n        ),\r\n      );\r\n\r\n      // Delete shadow annotations for placements\r\n      for (const [, annotationId] of placementAnnotationMap.current) {\r\n        if (annotationId) {\r\n          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});\r\n        }\r\n      }\r\n      placementAnnotationMap.current.clear();\r\n\r\n      // Delete shadow annotations for rearrange\r\n      for (const [, annotationId] of rearrangeAnnotationMap.current) {\r\n        if (annotationId) {\r\n          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});\r\n        }\r\n      }\r\n      rearrangeAnnotationMap.current.clear();\r\n    }\r\n\r\n    setIsClearing(true);\r\n    setCleared(true);\r\n\r\n    // Clear draw strokes\r\n    setDrawStrokes([]);\r\n    const canvas = drawCanvasRef.current;\r\n    if (canvas) {\r\n      const ctx = canvas.getContext(\"2d\");\r\n      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);\r\n    }\r\n\r\n    // Animate out design placements and rearrange sections, then clear\r\n    if (designPlacements.length > 0 || rearrangeState) {\r\n      setDesignClearSignal(n => n + 1);\r\n      setRearrangeClearSignal(n => n + 1);\r\n      originalSetTimeout(() => {\r\n        setDesignPlacements([]);\r\n        setRearrangeState(null);\r\n      }, 200);\r\n    }\r\n    if (blankCanvas) setBlankCanvas(false);\r\n    if (wireframePurpose) setWireframePurpose(\"\");\r\n    wireframeStashRef.current = { rearrange: null, placements: [] };\r\n    clearWireframeState(pathname);\r\n\r\n    const totalAnimationTime = count * 30 + 200;\r\n    originalSetTimeout(() => {\r\n      setAnnotations([]);\r\n      setAnimatedMarkers(new Set()); // Reset animated markers\r\n      localStorage.removeItem(getStorageKey(pathname));\r\n      setIsClearing(false);\r\n    }, totalAnimationTime);\r\n\r\n    originalSetTimeout(() => setCleared(false), 1500);\r\n  }, [pathname, annotations, drawStrokes, designPlacements, rearrangeState, blankCanvas, wireframePurpose, onAnnotationsClear, fireWebhook, endpoint]);",
+      "names": [
+        "clearAll"
+      ]
+    },
+    {
+      "text": "const copyOutput = useCallback(async () => {\r\n    const displayUrl =\r\n      typeof window !== \"undefined\"\r\n        ? window.location.pathname +\r\n          window.location.search +\r\n          window.location.hash\r\n        : pathname;\r\n    const wireframeOnly = isDesignMode && blankCanvas;\r\n\r\n    let output: string;\r\n    if (wireframeOnly) {\r\n      // In wireframe mode, skip annotations and draw strokes — only include layout\r\n      if (designPlacements.length === 0 && !rearrangeState && !wireframePurpose) return;\r\n      output = \"\";\r\n    } else {\r\n      output = generateOutput(\r\n        annotations,\r\n        displayUrl,\r\n        settings.outputDetail,\r\n      );\r\n      if (!output && drawStrokes.length === 0 && designPlacements.length === 0 && !rearrangeState) return;\r\n      if (!output) output = `## Page Feedback: ${displayUrl}\\n`;\r\n    }\r\n\r\n    // Describe draw strokes as text by detecting elements underneath\r\n    if (!wireframeOnly && drawStrokes.length > 0) {\r\n      // Collect drawing indices that have linked annotations (skip those in standalone section)\r\n      const linkedDrawingIndices = new Set<number>();\r\n      for (const a of annotations) {\r\n        if (a.drawingIndex != null) linkedDrawingIndices.add(a.drawingIndex);\r\n      }\r\n\r\n      // Temporarily hide the draw canvas so elementFromPoint hits real page elements\r\n      const canvas = drawCanvasRef.current;\r\n      if (canvas) canvas.style.visibility = \"hidden\";\r\n\r\n      const strokeDescriptions: string[] = [];\r\n      const scrollY = window.scrollY;\r\n      for (let strokeIdx = 0; strokeIdx < drawStrokes.length; strokeIdx++) {\r\n        // Skip strokes that have a linked annotation — their info is in the annotation output\r\n        if (linkedDrawingIndices.has(strokeIdx)) continue;\r\n        const stroke = drawStrokes[strokeIdx];\r\n        if (stroke.points.length < 2) continue;\r\n\r\n        // Get viewport coords for analysis (fixed strokes are already in viewport coords)\r\n        const viewportPoints = stroke.fixed\r\n          ? stroke.points\r\n          : stroke.points.map(p => ({ x: p.x, y: p.y - scrollY }));\r\n\r\n        // Bounding box (viewport coords)\r\n        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;\r\n        for (const p of viewportPoints) {\r\n          minX = Math.min(minX, p.x);\r\n          minY = Math.min(minY, p.y);\r\n          maxX = Math.max(maxX, p.x);\r\n          maxY = Math.max(maxY, p.y);\r\n        }\r\n        const bboxW = maxX - minX;\r\n        const bboxH = maxY - minY;\r\n        const bboxDiag = Math.hypot(bboxW, bboxH);\r\n\r\n        // Start/end analysis\r\n        const start = viewportPoints[0];\r\n        const end = viewportPoints[viewportPoints.length - 1];\r\n        const startEndDist = Math.hypot(end.x - start.x, end.y - start.y);\r\n\r\n        // Gesture classification\r\n        let gesture: \"circle\" | \"box\" | \"underline\" | \"arrow\" | \"drawing\";\r\n        const closedLoop = startEndDist < bboxDiag * 0.35;\r\n        const aspectRatio = bboxW / Math.max(bboxH, 1);\r\n\r\n        if (closedLoop && bboxDiag > 20) {\r\n          // Closed loop — circle vs box: measure how many points hug the bbox edges\r\n          // Box strokes spend time near edges; circles stay more centered\r\n          const edgeThreshold = Math.max(bboxW, bboxH) * 0.15;\r\n          let edgePoints = 0;\r\n          for (const p of viewportPoints) {\r\n            const nearLeft = p.x - minX < edgeThreshold;\r\n            const nearRight = maxX - p.x < edgeThreshold;\r\n            const nearTop = p.y - minY < edgeThreshold;\r\n            const nearBottom = maxY - p.y < edgeThreshold;\r\n            if ((nearLeft || nearRight) && (nearTop || nearBottom)) edgePoints++;\r\n          }\r\n          // If many points are near corners, it's a box\r\n          gesture = edgePoints > viewportPoints.length * 0.15 ? \"box\" : \"circle\";\r\n        } else if (aspectRatio > 3 && bboxH < 40) {\r\n          gesture = \"underline\";\r\n        } else if (startEndDist > bboxDiag * 0.5) {\r\n          gesture = \"arrow\";\r\n        } else {\r\n          gesture = \"drawing\";\r\n        }\r\n\r\n        // Sample elements along the stroke\r\n        const sampleCount = Math.min(10, viewportPoints.length);\r\n        const step = Math.max(1, Math.floor(viewportPoints.length / sampleCount));\r\n        const seenElements = new Set<HTMLElement>();\r\n        const elementNames: string[] = [];\r\n\r\n        const samplePoints = [start];\r\n        for (let i = step; i < viewportPoints.length - 1; i += step) {\r\n          samplePoints.push(viewportPoints[i]);\r\n        }\r\n        samplePoints.push(end);\r\n\r\n        for (const p of samplePoints) {\r\n          const el = deepElementFromPoint(p.x, p.y);\r\n          if (!el || seenElements.has(el)) continue;\r\n          if (closestCrossingShadow(el, \"[data-feedback-toolbar]\")) continue;\r\n          seenElements.add(el);\r\n          const { name } = identifyElement(el);\r\n          if (!elementNames.includes(name)) {\r\n            elementNames.push(name);\r\n          }\r\n        }\r\n\r\n        // Format description\r\n        const region = `${Math.round(minX)},${Math.round(minY)} → ${Math.round(maxX)},${Math.round(maxY)}`;\r\n        let desc: string;\r\n\r\n        if ((gesture === \"circle\" || gesture === \"box\") && elementNames.length > 0) {\r\n          const verb = gesture === \"box\" ? \"Boxed\" : \"Circled\";\r\n          desc = `${verb} **${elementNames[0]}**${elementNames.length > 1 ? ` (and ${elementNames.slice(1).join(\", \")})` : \"\"} (region: ${region})`;\r\n        } else if (gesture === \"underline\" && elementNames.length > 0) {\r\n          desc = `Underlined **${elementNames[0]}** (${region})`;\r\n        } else if (gesture === \"arrow\" && elementNames.length >= 2) {\r\n          desc = `Arrow from **${elementNames[0]}** to **${elementNames[elementNames.length - 1]}** (${Math.round(start.x)},${Math.round(start.y)} → ${Math.round(end.x)},${Math.round(end.y)})`;\r\n        } else if (elementNames.length > 0) {\r\n          desc = `${gesture === \"arrow\" ? \"Arrow\" : \"Drawing\"} near **${elementNames.join(\"**, **\")}** (region: ${region})`;\r\n        } else {\r\n          desc = `Drawing at ${region}`;\r\n        }\r\n        strokeDescriptions.push(desc);\r\n      }\r\n\r\n      // Restore canvas\r\n      if (canvas) canvas.style.visibility = \"\";\r\n\r\n      if (strokeDescriptions.length > 0) {\r\n        output += `\\n**Drawings:**\\n`;\r\n        strokeDescriptions.forEach((d, i) => {\r\n          output += `${i + 1}. ${d}\\n`;\r\n        });\r\n      }\r\n    }\r\n\r\n    // Append design layout section if there are placements (or purpose in wireframe mode)\r\n    if (designPlacements.length > 0 || (wireframeOnly && wireframePurpose)) {\r\n      output += \"\\n\" + generateDesignOutput(designPlacements, {\r\n        width: window.innerWidth,\r\n        height: window.innerHeight,\r\n      }, { blankCanvas, wireframePurpose: wireframePurpose || undefined }, settings.outputDetail);\r\n    }\r\n\r\n    // Append rearrange section if sections were reordered\r\n    if (rearrangeState) {\r\n      const rearrangeOutput = generateRearrangeOutput(rearrangeState, settings.outputDetail, {\r\n        width: window.innerWidth,\r\n        height: window.innerHeight,\r\n      });\r\n      if (rearrangeOutput) {\r\n        output += \"\\n\" + rearrangeOutput;\r\n      }\r\n    }\r\n\r\n    if (copyToClipboard) {\r\n      try {\r\n        await navigator.clipboard.writeText(output);\r\n      } catch {\r\n        // Clipboard may fail (permissions, not HTTPS, etc.) - continue anyway\r\n      }\r\n    }\r\n\r\n    // Fire callback with markdown output (always, regardless of clipboard success)\r\n    onCopy?.(output);\r\n\r\n    setCopied(true);\r\n    originalSetTimeout(() => setCopied(false), 2000);\r\n\r\n    if (settings.autoClearAfterCopy) {\r\n      originalSetTimeout(() => clearAll(), 500);\r\n    }\r\n  }, [\r\n    annotations,\r\n    drawStrokes,\r\n    designPlacements,\r\n    rearrangeState,\r\n    blankCanvas,\r\n    isDesignMode,\r\n    canvasPurpose,\r\n    wireframePurpose,\r\n    pathname,\r\n    settings.outputDetail,\r\n    effectiveReactMode,\r\n    settings.autoClearAfterCopy,\r\n    clearAll,\r\n    copyToClipboard,\r\n    onCopy,\r\n  ]);",
+      "names": [
+        "copyOutput"
+      ]
+    },
+    {
+      "text": "const sendToWebhook = useCallback(async () => {\r\n    const displayUrl =\r\n      typeof window !== \"undefined\"\r\n        ? window.location.pathname +\r\n          window.location.search +\r\n          window.location.hash\r\n        : pathname;\r\n    let output = generateOutput(\r\n      annotations,\r\n      displayUrl,\r\n      settings.outputDetail,\r\n    );\r\n    if (!output && designPlacements.length === 0 && !rearrangeState) return;\r\n    if (!output) output = `## Page Feedback: ${displayUrl}\\n`;\r\n\r\n    // Append design layout section if there are placements\r\n    if (designPlacements.length > 0) {\r\n      output += \"\\n\" + generateDesignOutput(designPlacements, {\r\n        width: window.innerWidth,\r\n        height: window.innerHeight,\r\n      }, { blankCanvas, wireframePurpose: wireframePurpose || undefined }, settings.outputDetail);\r\n    }\r\n\r\n    // Append rearrange section if sections were reordered\r\n    if (rearrangeState) {\r\n      const rearrangeOutput = generateRearrangeOutput(rearrangeState, settings.outputDetail, {\r\n        width: window.innerWidth,\r\n        height: window.innerHeight,\r\n      });\r\n      if (rearrangeOutput) {\r\n        output += \"\\n\" + rearrangeOutput;\r\n      }\r\n    }\r\n\r\n    // Fire onSubmit callback\r\n    if (onSubmit) {\r\n      onSubmit(output, annotations);\r\n    }\r\n\r\n    // Start sending (arrow fades)\r\n    setSendState(\"sending\");\r\n\r\n    // Brief delay for the fade effect\r\n    await new Promise((resolve) => originalSetTimeout(resolve, 150));\r\n\r\n    // Fire webhook and check result (force=true to bypass webhooksEnabled check for manual sends)\r\n    const success = await fireWebhook(\"submit\", { output, annotations }, true);\r\n\r\n    // Show result\r\n    setSendState(success ? \"sent\" : \"failed\");\r\n    originalSetTimeout(() => setSendState(\"idle\"), 2500);\r\n\r\n    // Clear annotations if send succeeded and autoClearAfterCopy is enabled\r\n    if (success && settings.autoClearAfterCopy) {\r\n      originalSetTimeout(() => clearAll(), 500);\r\n    }\r\n  }, [\r\n    onSubmit,\r\n    fireWebhook,\r\n    annotations,\r\n    designPlacements,\r\n    rearrangeState,\r\n    blankCanvas,\r\n    canvasPurpose,\r\n    pathname,\r\n    settings.outputDetail,\r\n    effectiveReactMode,\r\n    settings.autoClearAfterCopy,\r\n    clearAll,\r\n  ]);",
+      "names": [
+        "sendToWebhook"
+      ]
+    },
+    {
+      "text": "const handleToolbarMouseDown = useCallback(\r\n    (e: React.MouseEvent) => {\r\n      // Only drag when clicking the toolbar background (not buttons or settings)\r\n      if (\r\n        (e.target as HTMLElement).closest(\"button\") ||\r\n        (e.target as HTMLElement).closest('[data-agentation-settings-panel]')\r\n      ) {\r\n        return;\r\n      }\r\n\r\n      // Don't prevent default yet - let onClick work for collapsed state\r\n\r\n      // Get toolbar parent's actual current position (toolbarPosition is applied to parent)\r\n      const toolbarParent = (e.currentTarget as HTMLElement).parentElement;\r\n      if (!toolbarParent) return;\r\n\r\n      const rect = toolbarParent.getBoundingClientRect();\r\n      const currentX = toolbarPosition?.x ?? rect.left;\r\n      const currentY = toolbarPosition?.y ?? rect.top;\r\n\r\n      setDragStartPos({\r\n        x: e.clientX,\r\n        y: e.clientY,\r\n        toolbarX: currentX,\r\n        toolbarY: currentY,\r\n      });\r\n      // Don't set isDraggingToolbar yet - wait for actual movement\r\n    },\r\n    [toolbarPosition],\r\n  );",
+      "names": [
+        "handleToolbarMouseDown"
+      ]
+    },
+    {
+      "text": "const hasAnnotations = annotations.length > 0;",
+      "names": [
+        "hasAnnotations"
+      ]
+    },
+    {
+      "text": "const visibleAnnotations = annotations.filter(\r\n    (a) => !exitingMarkers.has(a.id) && a.kind !== \"placement\" && a.kind !== \"rearrange\",\r\n  );",
+      "names": [
+        "visibleAnnotations"
+      ]
+    },
+    {
+      "text": "const hasVisibleAnnotations = visibleAnnotations.length > 0;",
+      "names": [
+        "hasVisibleAnnotations"
+      ]
+    },
+    {
+      "text": "const exitingAnnotationsList = annotations.filter((a) =>\r\n    exitingMarkers.has(a.id),\r\n  );",
+      "names": [
+        "exitingAnnotationsList"
+      ]
+    },
+    {
+      "text": "const getTooltipPosition = (annotation: Annotation): React.CSSProperties => {\r\n    // Tooltip dimensions (from CSS)\r\n    const tooltipMaxWidth = 200;\r\n    const tooltipEstimatedHeight = 80; // Estimated max height\r\n    const markerSize = 22;\r\n    const gap = 10;\r\n\r\n    // Convert percentage-based x to pixels\r\n    const markerX = (annotation.x / 100) * window.innerWidth;\r\n    const markerY =\r\n      typeof annotation.y === \"string\"\r\n        ? parseFloat(annotation.y)\r\n        : annotation.y;\r\n\r\n    const styles: React.CSSProperties = {};\r\n\r\n    // Vertical positioning: flip if near bottom\r\n    const spaceBelow = window.innerHeight - markerY - markerSize - gap;\r\n    if (spaceBelow < tooltipEstimatedHeight) {\r\n      // Show above marker\r\n      styles.top = \"auto\";\r\n      styles.bottom = `calc(100% + ${gap}px)`;\r\n    }\r\n    // If enough space below, use default CSS (top: calc(100% + 10px))\r\n\r\n    // Horizontal positioning: adjust if near edges\r\n    const centerX = markerX - tooltipMaxWidth / 2;\r\n    const edgePadding = 10;\r\n\r\n    if (centerX < edgePadding) {\r\n      // Too close to left edge\r\n      const offset = edgePadding - centerX;\r\n      styles.left = `calc(50% + ${offset}px)`;\r\n    } else if (centerX + tooltipMaxWidth > window.innerWidth - edgePadding) {\r\n      // Too close to right edge\r\n      const overflow =\r\n        centerX + tooltipMaxWidth - (window.innerWidth - edgePadding);\r\n      styles.left = `calc(50% - ${overflow}px)`;\r\n    }\r\n    // If centered position is fine, use default CSS (left: 50%)\r\n\r\n    return styles;\r\n  };",
+      "names": [
+        "getTooltipPosition"
+      ]
+    }
+  ],
+  "funcs": [],
+  "effects": [
+    "useEffect(() => {\n    initFreezePatches();\r\n    const stop = (e: Event) => {\r\n      const wrapper = portalWrapperRef.current;\r\n      if (wrapper && wrapper.contains(e.target as Node)) {\r\n        e.stopPropagation();\r\n      }\r\n    };\r\n    const events = [\"mousedown\", \"click\", \"pointerdown\"] as const;\r\n    events.forEach((evt) => document.body.addEventListener(evt, stop));\r\n    return () => {\r\n      events.forEach((evt) => document.body.removeEventListener(evt, stop));\r\n    };\r\n  }, []);",
+    "useEffect(() => {\r\n    if (canvasShouldBeVisible) {\r\n      setCanvasReady(false);\r\n      const raf = originalRequestAnimationFrame(() => {\r\n        setCanvasReady(true);\r\n      });\r\n      return () => cancelAnimationFrame(raf);\r\n    } else {\r\n      setCanvasReady(false);\r\n    }\r\n  }, [canvasShouldBeVisible]);",
+    "useEffect(() => {\r\n    return () => {\r\n      if (tooltipSessionTimerRef.current)\r\n        clearTimeout(tooltipSessionTimerRef.current);\r\n    };\r\n  }, []);",
+    "useEffect(() => {\r\n    if (showSettings) {\r\n      setShowSettingsVisible(true);\r\n    } else {\r\n      // Reset tooltips when settings close (fixes tooltips not showing after closing settings)\r\n      setTooltipsHidden(false);\r\n      // Reset to main page when settings close\r\n      setSettingsPage(\"main\");\r\n      const timer = originalSetTimeout(() => setShowSettingsVisible(false), 0);\r\n      return () => clearTimeout(timer);\r\n    }\r\n  }, [showSettings]);",
+    "useEffect(() => {\r\n    if (shouldShowMarkers) {\r\n      // Show markers - reset animations and make visible\r\n      setMarkersExiting(false);\r\n      setMarkersVisible(true);\r\n      setAnimatedMarkers(new Set());\r\n      // After enter animations complete, mark all as animated\r\n      const timer = originalSetTimeout(() => {\r\n        setAnimatedMarkers((prev) => {\r\n          const newSet = new Set(prev);\r\n          annotations.forEach((a) => newSet.add(a.id));\r\n          return newSet;\r\n        });\r\n      }, 350);\r\n      return () => clearTimeout(timer);\r\n    } else if (markersVisible) {\r\n      // Hide markers - start exit animation, then unmount\r\n      setMarkersExiting(true);\r\n      const timer = originalSetTimeout(() => {\r\n        setMarkersVisible(false);\r\n        setMarkersExiting(false);\r\n      }, 250);\r\n      return () => clearTimeout(timer);\r\n    }\r\n    // eslint-disable-next-line react-hooks/exhaustive-deps\r\n  }, [shouldShowMarkers]);",
+    "useEffect(() => {\r\n    setMounted(true);\r\n    setScrollY(window.scrollY);\r\n    startCollectors();\r\n    const stored = loadAnnotations<Annotation>(pathname);\r\n    setAnnotations(stored.filter(isRenderableAnnotation));\r\n\r\n    // Trigger entrance animation only on first load (not on SPA navigation)\r\n    if (!hasPlayedEntranceAnimation) {\r\n      setShowEntranceAnimation(true);\r\n      hasPlayedEntranceAnimation = true;\r\n      // Remove animation class after it completes (toolbar: 500ms, badge: 400ms delay + 300ms)\r\n      originalSetTimeout(() => setShowEntranceAnimation(false), 750);\r\n    }\r\n\r\n    // Load saved theme preference, default to dark mode\r\n    try {\r\n      const savedTheme = localStorage.getItem(\"feedback-toolbar-theme\");\r\n      if (savedTheme !== null) {\r\n        setIsDarkMode(savedTheme === \"dark\");\r\n      }\r\n      // If no saved preference, keep default (dark mode)\r\n    } catch (e) {\r\n      // Ignore localStorage errors\r\n    }\r\n\r\n    // Load saved toolbar position\r\n    try {\r\n      const savedPosition = localStorage.getItem(\"feedback-toolbar-position\");\r\n      if (savedPosition) {\r\n        const pos = JSON.parse(savedPosition);\r\n        if (typeof pos.x === \"number\" && typeof pos.y === \"number\") {\r\n          setToolbarPosition(pos);\r\n        }\r\n      }\r\n    } catch (e) {\r\n      // Ignore localStorage errors\r\n    }\r\n  }, [pathname]);",
+    "useEffect(() => {\r\n    if (mounted) {\r\n      localStorage.setItem(\r\n        \"feedback-toolbar-settings\",\r\n        JSON.stringify(settings),\r\n      );\r\n    }\r\n  }, [settings, mounted]);",
+    "useEffect(() => {\r\n    if (mounted) {\r\n      localStorage.setItem(\r\n        \"feedback-toolbar-theme\",\r\n        isDarkMode ? \"dark\" : \"light\",\r\n      );\r\n    }\r\n  }, [isDarkMode, mounted]);",
+    "useEffect(() => {\r\n    const wasDragging = prevDraggingRef.current;\r\n    prevDraggingRef.current = isDraggingToolbar;\r\n\r\n    // Save position when dragging ends (transition from true to false)\r\n    if (wasDragging && !isDraggingToolbar && toolbarPosition && mounted) {\r\n      localStorage.setItem(\r\n        \"feedback-toolbar-position\",\r\n        JSON.stringify(toolbarPosition),\r\n      );\r\n    }\r\n  }, [isDraggingToolbar, toolbarPosition, mounted]);",
+    "useEffect(() => {\r\n    if (!endpoint || !mounted || sessionInitializedRef.current) return;\r\n    sessionInitializedRef.current = true;\r\n    setConnectionStatus(\"connecting\");\r\n\r\n    const initSession = async () => {\r\n      try {\r\n        // Check for stored session ID to rejoin on refresh\r\n        const storedSessionId = loadSessionId(pathname);\r\n        const sessionIdToJoin = initialSessionId || storedSessionId;\r\n        let sessionEstablished = false;\r\n\r\n        if (sessionIdToJoin) {\r\n          // Join existing session - server annotations are authoritative\r\n          try {\r\n            const session = await getSession(endpoint, sessionIdToJoin);\r\n            setCurrentSessionId(session.id);\r\n            setConnectionStatus(\"connected\");\r\n            saveSessionId(pathname, session.id);\r\n            sessionEstablished = true;\r\n\r\n            // Find local annotations that need to be synced:\r\n            // 1. Annotations never synced to any session\r\n            // 2. Annotations synced to a different session\r\n            // 3. Annotations marked as synced to THIS session but missing from server\r\n            //    (handles server-side deletion)\r\n            const allLocalAnnotations = loadAnnotations<Annotation>(pathname);\r\n            const serverIds = new Set(session.annotations.map((a) => a.id));\r\n            const localToMerge = allLocalAnnotations.filter((a) => {\r\n              // If it exists on server, don't re-upload\r\n              if (serverIds.has(a.id)) return false;\r\n              // Otherwise, needs to be synced (whether never synced, synced elsewhere, or missing from server)\r\n              return true;\r\n            });\r\n\r\n            // Sync unsynced local annotations to this session\r\n            if (localToMerge.length > 0) {\r\n              const baseUrl =\r\n                typeof window !== \"undefined\" ? window.location.origin : \"\";\r\n              const pageUrl = `${baseUrl}${pathname}`;\r\n\r\n              const results = await Promise.allSettled(\r\n                localToMerge.map((annotation) =>\r\n                  syncAnnotation(endpoint, session.id, {\r\n                    ...annotation,\r\n                    sessionId: session.id,\r\n                    url: pageUrl,\r\n                  }),\r\n                ),\r\n              );\r\n\r\n              const syncedAnnotations = results.map((result, i) => {\r\n                if (result.status === \"fulfilled\") {\r\n                  return result.value;\r\n                }\r\n                console.warn(\r\n                  \"[Agentation] Failed to sync annotation:\",\r\n                  result.reason,\r\n                );\r\n                return localToMerge[i];\r\n              });\r\n\r\n              // Mark merged annotations as synced\r\n              const allAnnotations = [\r\n                ...session.annotations,\r\n                ...syncedAnnotations,\r\n              ];\r\n              setAnnotations(allAnnotations.filter(isRenderableAnnotation));\r\n              saveAnnotationsWithSyncMarker(\r\n                pathname,\r\n                allAnnotations.filter(isRenderableAnnotation),\r\n                session.id,\r\n              );\r\n            } else {\r\n              setAnnotations(\r\n                session.annotations.filter(isRenderableAnnotation),\r\n              );\r\n              saveAnnotationsWithSyncMarker(\r\n                pathname,\r\n                session.annotations.filter(isRenderableAnnotation),\r\n                session.id,\r\n              );\r\n            }\r\n          } catch (joinError) {\r\n            // Session doesn't exist or expired - will create new below\r\n            console.warn(\r\n              \"[Agentation] Could not join session, creating new:\",\r\n              joinError,\r\n            );\r\n            // Clear the stored session ID since it's invalid\r\n            clearSessionId(pathname);\r\n            // sessionEstablished remains false, will create new session\r\n          }\r\n        }\r\n\r\n        // Create new session if we don't have one yet (either no stored ID, or rejoin failed)\r\n        if (!sessionEstablished) {\r\n          // Create new session for current page\r\n          const currentUrl =\r\n            typeof window !== \"undefined\" ? window.location.href : \"/\";\r\n          const session = await createSession(endpoint, currentUrl);\r\n          setCurrentSessionId(session.id);\r\n          setConnectionStatus(\"connected\");\r\n          saveSessionId(pathname, session.id);\r\n          onSessionCreated?.(session.id);\r\n\r\n          // Only sync annotations that have never been synced (no _syncedTo marker)\r\n          const allAnnotations = loadAllAnnotations<Annotation>();\r\n          const baseUrl =\r\n            typeof window !== \"undefined\" ? window.location.origin : \"\";\r\n\r\n          // Sync annotations from all pages in parallel\r\n          const syncPromises: Promise<void>[] = [];\r\n          for (const [pagePath, annotations] of allAnnotations) {\r\n            // Filter to only unsynced annotations\r\n            const unsyncedAnnotations = annotations.filter(\r\n              (a) => !(a as Annotation & { _syncedTo?: string })._syncedTo,\r\n            );\r\n            if (unsyncedAnnotations.length === 0) continue;\r\n\r\n            const pageUrl = `${baseUrl}${pagePath}`;\r\n            const isCurrentPage = pagePath === pathname;\r\n\r\n            syncPromises.push(\r\n              (async () => {\r\n                try {\r\n                  // Use current session for current page, create new sessions for other pages\r\n                  const targetSession = isCurrentPage\r\n                    ? session\r\n                    : await createSession(endpoint, pageUrl);\r\n\r\n                  const results = await Promise.allSettled(\r\n                    unsyncedAnnotations.map((annotation) =>\r\n                      syncAnnotation(endpoint, targetSession.id, {\r\n                        ...annotation,\r\n                        sessionId: targetSession.id,\r\n                        url: pageUrl,\r\n                      }),\r\n                    ),\r\n                  );\r\n\r\n                  // Mark synced annotations and update local state for current page\r\n                  const syncedAnnotations = results.map((result, i) => {\r\n                    if (result.status === \"fulfilled\") {\r\n                      return result.value;\r\n                    }\r\n                    console.warn(\r\n                      \"[Agentation] Failed to sync annotation:\",\r\n                      result.reason,\r\n                    );\r\n                    return unsyncedAnnotations[i];\r\n                  });\r\n\r\n                  const renderableSyncedAnnotations = syncedAnnotations.filter(\r\n                    isRenderableAnnotation,\r\n                  );\r\n\r\n                  // Save with sync marker\r\n                  saveAnnotationsWithSyncMarker(\r\n                    pagePath,\r\n                    renderableSyncedAnnotations,\r\n                    targetSession.id,\r\n                  );\r\n\r\n                  if (isCurrentPage) {\r\n                    const originalIds = new Set(\r\n                      unsyncedAnnotations.map((a) => a.id),\r\n                    );\r\n                    setAnnotations((prev) => {\r\n                      const newDuringSync = prev.filter(\r\n                        (a) => !originalIds.has(a.id),\r\n                      );\r\n                      return [...renderableSyncedAnnotations, ...newDuringSync];\r\n                    });\r\n                  }\r\n                } catch (err) {\r\n                  console.warn(\r\n                    `[Agentation] Failed to sync annotations for ${pagePath}:`,\r\n                    err,\r\n                  );\r\n                }\r\n              })(),\r\n            );\r\n          }\r\n\r\n          await Promise.allSettled(syncPromises);\r\n        }\r\n      } catch (error) {\r\n        // Network error - continue in local-only mode\r\n        setConnectionStatus(\"disconnected\");\r\n        console.warn(\r\n          \"[Agentation] Failed to initialize session, using local storage:\",\r\n          error,\r\n        );\r\n      }\r\n    };\r\n\r\n    initSession();\r\n  }, [endpoint, initialSessionId, mounted, onSessionCreated, pathname]);",
+    "useEffect(() => {\r\n    if (!endpoint || !mounted) return;\r\n\r\n    const checkHealth = async () => {\r\n      try {\r\n        const response = await fetch(`${endpoint}/health`);\r\n        if (response.ok) {\r\n          setConnectionStatus(\"connected\");\r\n        } else {\r\n          setConnectionStatus(\"disconnected\");\r\n        }\r\n      } catch {\r\n        setConnectionStatus(\"disconnected\");\r\n      }\r\n    };\r\n\r\n    // Check immediately, then every 10 seconds\r\n    checkHealth();\r\n    const interval = originalSetInterval(checkHealth, 10000);\r\n    return () => clearInterval(interval);\r\n  }, [endpoint, mounted]);",
+    "useEffect(() => {\r\n    if (!endpoint || !mounted || !currentSessionId) return;\r\n\r\n    const eventSource = new EventSource(\r\n      `${endpoint}/sessions/${currentSessionId}/events`\r\n    );\r\n\r\n    const removedStatuses = [\"resolved\", \"dismissed\"];\r\n\r\n    const handler = (e: MessageEvent) => {\r\n      try {\r\n        const event = JSON.parse(e.data);\r\n        if (removedStatuses.includes(event.payload?.status)) {\r\n          const id = event.payload.id as string;\r\n          const kind = event.payload.kind as string | undefined;\r\n\r\n          if (kind === \"placement\") {\r\n            // Reverse-lookup: find which placementId maps to this annotation ID\r\n            for (const [placementId, annotationId] of placementAnnotationMap.current) {\r\n              if (annotationId === id) {\r\n                placementAnnotationMap.current.delete(placementId);\r\n                setDesignPlacements((prev) => prev.filter((p) => p.id !== placementId));\r\n                break;\r\n              }\r\n            }\r\n          } else if (kind === \"rearrange\") {\r\n            // Reverse-lookup: find which sectionId maps to this annotation ID\r\n            for (const [sectionId, annotationId] of rearrangeAnnotationMap.current) {\r\n              if (annotationId === id) {\r\n                rearrangeAnnotationMap.current.delete(sectionId);\r\n                setRearrangeState((prev) => {\r\n                  if (!prev) return null;\r\n                  const remaining = prev.sections.filter((s) => s.id !== sectionId);\r\n                  if (remaining.length === 0) return null;\r\n                  return { ...prev, sections: remaining };\r\n                });\r\n                break;\r\n              }\r\n            }\r\n          } else {\r\n            // Feedback annotation — trigger exit animation then remove\r\n            setExitingMarkers((prev) => new Set(prev).add(id));\r\n            originalSetTimeout(() => {\r\n              setAnnotations((prev) => prev.filter((a) => a.id !== id));\r\n              setExitingMarkers((prev) => {\r\n                const next = new Set(prev);\r\n                next.delete(id);\r\n                return next;\r\n              });\r\n            }, 150);\r\n          }\r\n        }\r\n      } catch {\r\n        // Ignore parse errors\r\n      }\r\n    };\r\n\r\n    eventSource.addEventListener(\"annotation.updated\", handler);\r\n\r\n    return () => {\r\n      eventSource.removeEventListener(\"annotation.updated\", handler);\r\n      eventSource.close();\r\n    };\r\n  }, [endpoint, mounted, currentSessionId]);",
+    "useEffect(() => {\r\n    if (!endpoint || !mounted) return;\r\n\r\n    // Check if we just reconnected (was disconnected, now connected)\r\n    const wasDisconnected = prevConnectionStatusRef.current === \"disconnected\";\r\n    const isNowConnected = connectionStatus === \"connected\";\r\n    prevConnectionStatusRef.current = connectionStatus;\r\n\r\n    if (wasDisconnected && isNowConnected) {\r\n      // Sync any local annotations that aren't on the server\r\n      const syncLocalAnnotations = async () => {\r\n        try {\r\n          const localAnnotations = loadAnnotations<Annotation>(pathname);\r\n          if (localAnnotations.length === 0) return;\r\n\r\n          const baseUrl = typeof window !== \"undefined\" ? window.location.origin : \"\";\r\n          const pageUrl = `${baseUrl}${pathname}`;\r\n\r\n          // Get or create session\r\n          let sessionId = currentSessionId;\r\n          let serverAnnotations: Annotation[] = [];\r\n\r\n          if (sessionId) {\r\n            // Try to get existing session\r\n            try {\r\n              const session = await getSession(endpoint, sessionId);\r\n              serverAnnotations = session.annotations;\r\n            } catch {\r\n              // Session doesn't exist anymore, create new one\r\n              sessionId = null;\r\n            }\r\n          }\r\n\r\n          if (!sessionId) {\r\n            // Create new session\r\n            const newSession = await createSession(endpoint, pageUrl);\r\n            sessionId = newSession.id;\r\n            setCurrentSessionId(sessionId);\r\n            saveSessionId(pathname, sessionId);\r\n          }\r\n\r\n          // Find annotations that need syncing\r\n          const serverIds = new Set(serverAnnotations.map((a) => a.id));\r\n          const unsyncedLocal = localAnnotations.filter((a) => !serverIds.has(a.id));\r\n\r\n          if (unsyncedLocal.length > 0) {\r\n            const results = await Promise.allSettled(\r\n              unsyncedLocal.map((annotation) =>\r\n                syncAnnotation(endpoint, sessionId!, {\r\n                  ...annotation,\r\n                  sessionId: sessionId!,\r\n                  url: pageUrl,\r\n                })\r\n              )\r\n            );\r\n\r\n            const syncedAnnotations = results.map((result, i) => {\r\n              if (result.status === \"fulfilled\") {\r\n                return result.value;\r\n              }\r\n              console.warn(\"[Agentation] Failed to sync annotation on reconnect:\", result.reason);\r\n              return unsyncedLocal[i];\r\n            });\r\n\r\n            // Update local state with server + synced annotations\r\n            const allAnnotations = [...serverAnnotations, ...syncedAnnotations];\r\n            const renderableAnnotations = allAnnotations.filter(\r\n              isRenderableAnnotation,\r\n            );\r\n            setAnnotations(renderableAnnotations);\r\n            saveAnnotationsWithSyncMarker(\r\n              pathname,\r\n              renderableAnnotations,\r\n              sessionId!,\r\n            );\r\n          }\r\n        } catch (err) {\r\n          console.warn(\"[Agentation] Failed to sync on reconnect:\", err);\r\n        }\r\n      };\r\n\r\n      syncLocalAnnotations();\r\n    }\r\n  }, [connectionStatus, endpoint, mounted, currentSessionId, pathname]);",
+    "useEffect(() => {\r\n    if (!enableDemoMode) return;\r\n    if (!mounted || !demoAnnotations || demoAnnotations.length === 0) return;\r\n    if (annotations.length > 0) return;\r\n\r\n    const timeoutIds: ReturnType<typeof originalSetTimeout>[] = [];\r\n\r\n    timeoutIds.push(\r\n      originalSetTimeout(() => {\r\n        setIsActive(true);\r\n      }, demoDelay - 200),\r\n    );\r\n\r\n    demoAnnotations.forEach((demo, index) => {\r\n      const annotationDelay = demoDelay + index * 300;\r\n\r\n      timeoutIds.push(\r\n        originalSetTimeout(() => {\r\n          const element = document.querySelector(demo.selector) as HTMLElement;\r\n          if (!element) return;\r\n\r\n          const rect = element.getBoundingClientRect();\r\n          const { name, path } = identifyElement(element);\r\n\r\n          const newAnnotation: Annotation = {\r\n            id: `demo-${Date.now()}-${index}`,\r\n            x: ((rect.left + rect.width / 2) / window.innerWidth) * 100,\r\n            y: rect.top + rect.height / 2 + window.scrollY,\r\n            comment: demo.comment,\r\n            element: name,\r\n            elementPath: path,\r\n            timestamp: Date.now(),\r\n            selectedText: demo.selectedText,\r\n            boundingBox: {\r\n              x: rect.left,\r\n              y: rect.top + window.scrollY,\r\n              width: rect.width,\r\n              height: rect.height,\r\n            },\r\n            nearbyText: getNearbyText(element),\r\n            cssClasses: getElementClasses(element),\r\n          };\r\n\r\n          setAnnotations((prev) => [...prev, newAnnotation]);\r\n        }, annotationDelay),\r\n      );\r\n    });\r\n\r\n    return () => {\r\n      timeoutIds.forEach(clearTimeout);\r\n    };\r\n  }, [enableDemoMode, mounted, demoAnnotations, demoDelay]);",
+    "useEffect(() => {\r\n    const handleScroll = () => {\r\n      setScrollY(window.scrollY);\r\n      setIsScrolling(true);\r\n\r\n      if (scrollTimeoutRef.current) {\r\n        clearTimeout(scrollTimeoutRef.current);\r\n      }\r\n\r\n      scrollTimeoutRef.current = originalSetTimeout(() => {\r\n        setIsScrolling(false);\r\n      }, 150);\r\n    };\r\n\r\n    window.addEventListener(\"scroll\", handleScroll, { passive: true });\r\n    return () => {\r\n      window.removeEventListener(\"scroll\", handleScroll);\r\n      if (scrollTimeoutRef.current) {\r\n        clearTimeout(scrollTimeoutRef.current);\r\n      }\r\n    };\r\n  }, []);",
+    "useEffect(() => {\r\n    if (mounted && annotations.length > 0) {\r\n      if (currentSessionId) {\r\n        // Connected to session - save with sync marker to prevent re-upload on refresh\r\n        saveAnnotationsWithSyncMarker(pathname, annotations, currentSessionId);\r\n      } else {\r\n        // Not connected - save without markers (will sync when connected)\r\n        saveAnnotations(pathname, annotations);\r\n      }\r\n    } else if (mounted && annotations.length === 0) {\r\n      localStorage.removeItem(getStorageKey(pathname));\r\n    }\r\n  }, [annotations, pathname, mounted, currentSessionId]);",
+    "useEffect(() => {\r\n    if (mounted && !designPlacementsLoaded.current) {\r\n      designPlacementsLoaded.current = true;\r\n      const stored = loadDesignPlacements<DesignPlacement>(pathname);\r\n      if (stored.length > 0) setDesignPlacements(stored);\r\n    }\r\n  }, [mounted, pathname]);",
+    "useEffect(() => {\r\n    if (mounted && designPlacementsLoaded.current && !blankCanvas) {\r\n      if (designPlacements.length > 0) {\r\n        saveDesignPlacements(pathname, designPlacements);\r\n      } else {\r\n        clearDesignPlacements(pathname);\r\n      }\r\n    }\r\n  }, [designPlacements, pathname, mounted, blankCanvas]);",
+    "useEffect(() => {\r\n    if (mounted && !rearrangeLoaded.current) {\r\n      rearrangeLoaded.current = true;\r\n      const stored = loadRearrangeState<RearrangeState>(pathname);\r\n      if (stored) {\r\n        // Migrate old state that lacks currentRect\r\n        const migrated = {\r\n          ...stored,\r\n          sections: stored.sections.map(s => ({\r\n            ...s,\r\n            currentRect: s.currentRect ?? { ...s.originalRect },\r\n          })),\r\n        };\r\n        setRearrangeState(migrated);\r\n      }\r\n    }\r\n  }, [mounted, pathname]);",
+    "useEffect(() => {\r\n    if (mounted && rearrangeLoaded.current && !blankCanvas) {\r\n      if (rearrangeState) {\r\n        saveRearrangeState(pathname, rearrangeState);\r\n      } else {\r\n        clearRearrangeState(pathname);\r\n      }\r\n    }\r\n  }, [rearrangeState, pathname, mounted, blankCanvas]);",
+    "useEffect(() => {\r\n    if (mounted && !wireframeLoaded.current) {\r\n      wireframeLoaded.current = true;\r\n      const stored = loadWireframeState<RearrangeState>(pathname);\r\n      if (stored) {\r\n        wireframeStashRef.current = {\r\n          rearrange: stored.rearrange,\r\n          placements: (stored.placements || []) as DesignPlacement[],\r\n        };\r\n        if (stored.purpose) setWireframePurpose(stored.purpose);\r\n      }\r\n    }\r\n  }, [mounted, pathname]);",
+    "useEffect(() => {\r\n    if (!mounted || !wireframeLoaded.current) return;\r\n    const stash = wireframeStashRef.current;\r\n    // Save current wireframe state: either from stash (if in explore mode) or live (if in wireframe mode)\r\n    if (blankCanvas) {\r\n      // Currently in wireframe — save live state\r\n      const hasContent = (rearrangeState?.sections?.length ?? 0) > 0 || designPlacements.length > 0 || wireframePurpose;\r\n      if (hasContent) {\r\n        saveWireframeState(pathname, { rearrange: rearrangeState, placements: designPlacements, purpose: wireframePurpose });\r\n      } else {\r\n        clearWireframeState(pathname);\r\n      }\r\n    } else {\r\n      // In explore mode — save stash\r\n      const hasContent = (stash.rearrange?.sections?.length ?? 0) > 0 || stash.placements.length > 0 || wireframePurpose;\r\n      if (hasContent) {\r\n        saveWireframeState(pathname, { rearrange: stash.rearrange, placements: stash.placements, purpose: wireframePurpose });\r\n      } else {\r\n        clearWireframeState(pathname);\r\n      }\r\n    }\r\n  }, [rearrangeState, designPlacements, wireframePurpose, blankCanvas, pathname, mounted]);",
+    "useEffect(() => {\r\n    if (isDesignMode && !rearrangeState) {\r\n      setRearrangeState({\r\n        sections: [],\r\n        originalOrder: [],\r\n        detectedAt: Date.now(),\r\n      });\r\n    }\r\n  }, [isDesignMode, rearrangeState]);",
+    "useEffect(() => {\r\n    if (!endpoint || !currentSessionId) return;\r\n\r\n    const currentMap = placementAnnotationMap.current;\r\n    const currentIds = new Set(designPlacements.map((p) => p.id));\r\n\r\n    // Create annotations for new placements\r\n    for (const p of designPlacements) {\r\n      if (currentMap.has(p.id)) continue;\r\n\r\n      // Mark as in-flight to avoid duplicates\r\n      currentMap.set(p.id, \"\");\r\n\r\n      const pageUrl =\r\n        typeof window !== \"undefined\"\r\n          ? window.location.pathname + window.location.search + window.location.hash\r\n          : pathname;\r\n\r\n      syncAnnotation(endpoint, currentSessionId, {\r\n        id: p.id,\r\n        x: (p.x / window.innerWidth) * 100,\r\n        y: p.y,\r\n        comment: `Place ${p.type} at (${Math.round(p.x)}, ${Math.round(p.y)}), ${p.width}×${p.height}px${p.text ? ` — \"${p.text}\"` : \"\"}`,\r\n        element: `[design:${p.type}]`,\r\n        elementPath: \"[placement]\",\r\n        timestamp: p.timestamp,\r\n        url: pageUrl,\r\n        intent: \"change\",\r\n        severity: \"important\",\r\n        kind: \"placement\",\r\n        placement: {\r\n          componentType: p.type,\r\n          width: p.width,\r\n          height: p.height,\r\n          scrollY: p.scrollY,\r\n          text: p.text,\r\n        },\r\n      } as Annotation)\r\n        .then((serverAnnotation) => {\r\n          // Update map with real server ID\r\n          if (currentMap.has(p.id)) {\r\n            currentMap.set(p.id, serverAnnotation.id);\r\n          }\r\n        })\r\n        .catch((err) => {\r\n          console.warn(\"[Agentation] Failed to sync placement annotation:\", err);\r\n          currentMap.delete(p.id);\r\n        });\r\n    }\r\n\r\n    // Delete annotations for removed placements\r\n    for (const [placementId, annotationId] of currentMap) {\r\n      if (!currentIds.has(placementId)) {\r\n        currentMap.delete(placementId);\r\n        if (annotationId) {\r\n          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});\r\n        }\r\n      }\r\n    }\r\n  }, [designPlacements, endpoint, currentSessionId, pathname]);",
+    "useEffect(() => {\r\n    if (!endpoint || !currentSessionId) return;\r\n\r\n    if (rearrangeDebounceTimer.current) {\r\n      clearTimeout(rearrangeDebounceTimer.current);\r\n    }\r\n\r\n    rearrangeDebounceTimer.current = originalSetTimeout(() => {\r\n      const currentMap = rearrangeAnnotationMap.current;\r\n\r\n      if (!rearrangeState || rearrangeState.sections.length === 0) {\r\n        // Rearrange cleared — delete all shadow annotations\r\n        for (const [, annotationId] of currentMap) {\r\n          if (annotationId) {\r\n            deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});\r\n          }\r\n        }\r\n        currentMap.clear();\r\n        return;\r\n      }\r\n\r\n      const currentIds = new Set(rearrangeState.sections.map((s) => s.id));\r\n      const pageUrl =\r\n        typeof window !== \"undefined\"\r\n          ? window.location.pathname + window.location.search + window.location.hash\r\n          : pathname;\r\n\r\n      // Check which sections have actually changed from original\r\n      for (const section of rearrangeState.sections) {\r\n        const orig = section.originalRect;\r\n        const curr = section.currentRect;\r\n        const hasMoved =\r\n          Math.abs(orig.x - curr.x) > 1 ||\r\n          Math.abs(orig.y - curr.y) > 1 ||\r\n          Math.abs(orig.width - curr.width) > 1 ||\r\n          Math.abs(orig.height - curr.height) > 1;\r\n\r\n        if (!hasMoved) {\r\n          // Section returned to original — delete annotation if exists\r\n          const existingId = currentMap.get(section.id);\r\n          if (existingId) {\r\n            currentMap.delete(section.id);\r\n            deleteAnnotationFromServer(endpoint, existingId).catch(() => {});\r\n          }\r\n          continue;\r\n        }\r\n\r\n        const existingAnnotationId = currentMap.get(section.id);\r\n        if (existingAnnotationId) {\r\n          // Update existing\r\n          updateAnnotationOnServer(endpoint, existingAnnotationId, {\r\n            comment: `Move ${section.label} section (${section.tagName}) — from (${Math.round(orig.x)},${Math.round(orig.y)}) ${Math.round(orig.width)}×${Math.round(orig.height)} to (${Math.round(curr.x)},${Math.round(curr.y)}) ${Math.round(curr.width)}×${Math.round(curr.height)}`,\r\n          }).catch((err) => {\r\n            console.warn(\"[Agentation] Failed to update rearrange annotation:\", err);\r\n          });\r\n        } else {\r\n          // Create new\r\n          currentMap.set(section.id, \"\");\r\n\r\n          syncAnnotation(endpoint, currentSessionId, {\r\n            id: section.id,\r\n            x: (curr.x / window.innerWidth) * 100,\r\n            y: curr.y,\r\n            comment: `Move ${section.label} section (${section.tagName}) — from (${Math.round(orig.x)},${Math.round(orig.y)}) ${Math.round(orig.width)}×${Math.round(orig.height)} to (${Math.round(curr.x)},${Math.round(curr.y)}) ${Math.round(curr.width)}×${Math.round(curr.height)}`,\r\n            element: section.selector,\r\n            elementPath: \"[rearrange]\",\r\n            timestamp: Date.now(),\r\n            url: pageUrl,\r\n            intent: \"change\",\r\n            severity: \"important\",\r\n            kind: \"rearrange\",\r\n            rearrange: {\r\n              selector: section.selector,\r\n              label: section.label,\r\n              tagName: section.tagName,\r\n              originalRect: orig,\r\n              currentRect: curr,\r\n            },\r\n          } as Annotation)\r\n            .then((serverAnnotation) => {\r\n              if (currentMap.has(section.id)) {\r\n                currentMap.set(section.id, serverAnnotation.id);\r\n              }\r\n            })\r\n            .catch((err) => {\r\n              console.warn(\"[Agentation] Failed to sync rearrange annotation:\", err);\r\n              currentMap.delete(section.id);\r\n            });\r\n        }\r\n      }\r\n\r\n      // Delete annotations for sections no longer in state\r\n      for (const [sectionId, annotationId] of currentMap) {\r\n        if (!currentIds.has(sectionId)) {\r\n          currentMap.delete(sectionId);\r\n          if (annotationId) {\r\n            deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});\r\n          }\r\n        }\r\n      }\r\n    }, 300);\r\n\r\n    return () => {\r\n      if (rearrangeDebounceTimer.current) {\r\n        clearTimeout(rearrangeDebounceTimer.current);\r\n      }\r\n    };\r\n  }, [rearrangeState, endpoint, currentSessionId, pathname]);",
+    "useEffect(() => {\r\n    return () => {\r\n      for (const [, entry] of rearrangeMovedEls.current) {\r\n        const { el, origStyles, ancestors } = entry;\r\n        el.style.transition = \"transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1)\";\r\n        el.style.transform = origStyles.transform;\r\n        el.style.transformOrigin = origStyles.transformOrigin;\r\n        el.style.opacity = origStyles.opacity;\r\n        el.style.position = origStyles.position;\r\n        el.style.zIndex = origStyles.zIndex;\r\n        // Clean up transition + display + ancestors after animation completes\r\n        originalSetTimeout(() => {\r\n          el.style.transition = \"\";\r\n          el.style.display = origStyles.display;\r\n          for (const a of ancestors) {\r\n            a.el.style.overflow = a.overflow;\r\n          }\r\n        }, 450);\r\n      }\r\n      rearrangeMovedEls.current.clear();\r\n    };\r\n  }, []);",
+    "useEffect(() => {\r\n    if (!isActive) {\r\n      setPendingAnnotation(null);\r\n      setEditingAnnotation(null);\r\n      setEditingTargetElement(null);\r\n      setEditingTargetElements([]);\r\n      setHoverInfo(null);\r\n      setShowSettings(false); // Close settings when toolbar closes\r\n      setPendingMultiSelectElements([]); // Clear multi-select\r\n      modifiersHeldRef.current = { cmd: false, shift: false }; // Reset modifier tracking\r\n      if (isFrozen) {\r\n        unfreezeAnimations();\r\n      }\r\n    }\r\n  }, [isActive, isFrozen, unfreezeAnimations]);",
+    "useEffect(() => {\r\n    return () => {\r\n      unfreezeAll();\r\n    };\r\n  }, []);",
+    "useEffect(() => {\r\n    if (!isActive) return;\r\n\r\n    const textElementsSelector = [\r\n      \"p\", \"span\", \"h1\", \"h2\", \"h3\", \"h4\", \"h5\", \"h6\",\r\n      \"li\", \"td\", \"th\", \"label\", \"blockquote\", \"figcaption\",\r\n      \"caption\", \"legend\", \"dt\", \"dd\", \"pre\", \"code\",\r\n      \"em\", \"strong\", \"b\", \"i\", \"u\", \"s\", \"a\",\r\n      \"time\", \"address\", \"cite\", \"q\", \"abbr\", \"dfn\",\r\n      \"mark\", \"small\", \"sub\", \"sup\", \"[contenteditable]\"\r\n    ].join(\", \");\r\n\r\n    const notAgentationSelector = `:not([data-agentation-root]):not([data-agentation-root] *)`;\r\n\r\n    const style = document.createElement(\"style\");\r\n    style.id = \"feedback-cursor-styles\";\r\n    // Text elements get text cursor (higher specificity with body prefix)\r\n    // Everything else gets crosshair\r\n    style.textContent = `\r\n      body ${notAgentationSelector} {\r\n        cursor: crosshair !important;\r\n      }\r\n\r\n      body :is(${textElementsSelector})${notAgentationSelector} {\r\n        cursor: text !important;\r\n      }\r\n    `;\r\n    document.head.appendChild(style);\r\n\r\n    return () => {\r\n      const existingStyle = document.getElementById(\"feedback-cursor-styles\");\r\n      if (existingStyle) existingStyle.remove();\r\n    };\r\n  }, [isActive]);",
+    "useEffect(() => {\r\n    if (hoveredDrawingIdx !== null && isActive) {\r\n      document.documentElement.setAttribute(\"data-drawing-hover\", \"\");\r\n      return () => document.documentElement.removeAttribute(\"data-drawing-hover\");\r\n    }\r\n  }, [hoveredDrawingIdx, isActive]);",
+    "useEffect(() => {\r\n    if (!isActive || pendingAnnotation || isDrawMode || isDesignMode) return;\r\n\r\n    const handleMouseMove = (e: MouseEvent) => {\r\n      // Use composedPath to get actual target inside shadow DOM\r\n      const target = (e.composedPath()[0] || e.target) as HTMLElement;\r\n      if (closestCrossingShadow(target, \"[data-feedback-toolbar]\")) {\r\n        setHoverInfo(null);\r\n        return;\r\n      }\r\n\r\n      const elementUnder = deepElementFromPoint(e.clientX, e.clientY);\r\n      if (\r\n        !elementUnder ||\r\n        closestCrossingShadow(elementUnder, \"[data-feedback-toolbar]\")\r\n      ) {\r\n        setHoverInfo(null);\r\n        return;\r\n      }\r\n\r\n      const { name, elementName, path, reactComponents } =\r\n        identifyElementWithReact(elementUnder, effectiveReactMode);\r\n      const rect = elementUnder.getBoundingClientRect();\r\n\r\n      setHoverInfo({\r\n        element: name,\r\n        elementName,\r\n        elementPath: path,\r\n        rect,\r\n        reactComponents,\r\n      });\r\n      setHoverPosition({ x: e.clientX, y: e.clientY });\r\n    };\r\n\r\n    document.addEventListener(\"mousemove\", handleMouseMove);\r\n    return () => document.removeEventListener(\"mousemove\", handleMouseMove);\r\n  }, [isActive, pendingAnnotation, isDrawMode, isDesignMode, effectiveReactMode, drawStrokes]);",
+    "useEffect(() => {\r\n    if (!isActive || isDrawMode || isDesignMode) return;\r\n\r\n    const handleClick = (e: MouseEvent) => {\r\n      if (justFinishedDragRef.current) {\r\n        justFinishedDragRef.current = false;\r\n        return;\r\n      }\r\n\r\n      // Use composedPath to get actual target inside shadow DOM, falling back to e.target\r\n      const target = (e.composedPath()[0] || e.target) as HTMLElement;\r\n\r\n      if (closestCrossingShadow(target, \"[data-feedback-toolbar]\")) return;\r\n      if (closestCrossingShadow(target, \"[data-annotation-popup]\")) return;\r\n      if (closestCrossingShadow(target, \"[data-annotation-marker]\")) return;\r\n\r\n      // Handle cmd+shift+click for multi-element selection\r\n      if (e.metaKey && e.shiftKey && !pendingAnnotation && !editingAnnotation) {\r\n        e.preventDefault();\r\n        e.stopPropagation();\r\n\r\n        const elementUnder = deepElementFromPoint(e.clientX, e.clientY);\r\n        if (!elementUnder) return;\r\n\r\n        const rect = elementUnder.getBoundingClientRect();\r\n        const { name, path, reactComponents } = identifyElementWithReact(\r\n          elementUnder,\r\n          effectiveReactMode,\r\n        );\r\n\r\n        // Toggle: check if already selected\r\n        const existingIndex = pendingMultiSelectElements.findIndex(\r\n          (item) => item.element === elementUnder,\r\n        );\r\n\r\n        if (existingIndex >= 0) {\r\n          // Deselect\r\n          setPendingMultiSelectElements((prev) =>\r\n            prev.filter((_, i) => i !== existingIndex),\r\n          );\r\n        } else {\r\n          // Select\r\n          setPendingMultiSelectElements((prev) => [\r\n            ...prev,\r\n            {\r\n              element: elementUnder,\r\n              rect,\r\n              name,\r\n              path,\r\n              reactComponents: reactComponents ?? undefined,\r\n            },\r\n          ]);\r\n        }\r\n        return;\r\n      }\r\n\r\n      const isInteractive = closestCrossingShadow(\r\n        target,\r\n        \"button, a, input, select, textarea, [role='button'], [onclick]\",\r\n      );\r\n\r\n      // Block interactions on interactive elements when enabled\r\n      if (settings.blockInteractions && isInteractive) {\r\n        e.preventDefault();\r\n        e.stopPropagation();\r\n        // Still create annotation on the interactive element\r\n      }\r\n\r\n      if (pendingAnnotation) {\r\n        if (isInteractive && !settings.blockInteractions) {\r\n          return;\r\n        }\r\n        e.preventDefault();\r\n        popupRef.current?.shake();\r\n        return;\r\n      }\r\n\r\n      if (editingAnnotation) {\r\n        if (isInteractive && !settings.blockInteractions) {\r\n          return;\r\n        }\r\n        e.preventDefault();\r\n        editPopupRef.current?.shake();\r\n        return;\r\n      }\r\n\r\n      e.preventDefault();\r\n\r\n      const elementUnder = deepElementFromPoint(e.clientX, e.clientY);\r\n      if (!elementUnder) return;\r\n\r\n      const { name, path, reactComponents } = identifyElementWithReact(\r\n        elementUnder,\r\n        effectiveReactMode,\r\n      );\r\n      const rect = elementUnder.getBoundingClientRect();\r\n      const x = (e.clientX / window.innerWidth) * 100;\r\n\r\n      const isFixed = isElementFixed(elementUnder);\r\n      const y = isFixed ? e.clientY : e.clientY + window.scrollY;\r\n\r\n      const selection = window.getSelection();\r\n      let selectedText: string | undefined;\r\n      if (selection && selection.toString().trim().length > 0) {\r\n        selectedText = selection.toString().trim().slice(0, 500);\r\n      }\r\n\r\n      // Capture computed styles - filtered for popup, full for forensic output\r\n      const computedStylesObj = getDetailedComputedStyles(elementUnder);\r\n      const computedStylesStr = getForensicComputedStyles(elementUnder);\r\n\r\n      setPendingAnnotation({\r\n        x,\r\n        y,\r\n        clientY: e.clientY,\r\n        element: name,\r\n        elementPath: path,\r\n        selectedText,\r\n        boundingBox: {\r\n          x: rect.left,\r\n          y: isFixed ? rect.top : rect.top + window.scrollY,\r\n          width: rect.width,\r\n          height: rect.height,\r\n        },\r\n        nearbyText: getNearbyText(elementUnder),\r\n        cssClasses: getElementClasses(elementUnder),\r\n        isFixed,\r\n        fullPath: getFullElementPath(elementUnder),\r\n        accessibility: getAccessibilityInfo(elementUnder),\r\n        computedStyles: computedStylesStr,\r\n        computedStylesObj,\r\n        nearbyElements: getNearbyElements(elementUnder),\r\n        reactComponents: reactComponents ?? undefined,\r\n        sourceFile: detectSourceFile(elementUnder),\r\n        targetElement: elementUnder, // Store for live position queries\r\n        // Context captured at annotation creation time in addAnnotation\r\n      });\r\n      setHoverInfo(null);\r\n    };\r\n\r\n    // Use capture phase to intercept before element handlers\r\n    document.addEventListener(\"click\", handleClick, true);\r\n    return () => document.removeEventListener(\"click\", handleClick, true);\r\n  }, [\r\n    isActive,\r\n    isDrawMode,\r\n    isDesignMode,\r\n    pendingAnnotation,\r\n    editingAnnotation,\r\n    settings.blockInteractions,\r\n    effectiveReactMode,\r\n    pendingMultiSelectElements,\r\n  ]);",
+    "useEffect(() => {\r\n    if (!isActive) return;\r\n\r\n    const handleKeyDown = (e: KeyboardEvent) => {\r\n      if (e.key === \"Meta\") modifiersHeldRef.current.cmd = true;\r\n      if (e.key === \"Shift\") modifiersHeldRef.current.shift = true;\r\n    };\r\n\r\n    const handleKeyUp = (e: KeyboardEvent) => {\r\n      const wasHoldingBoth =\r\n        modifiersHeldRef.current.cmd && modifiersHeldRef.current.shift;\r\n\r\n      if (e.key === \"Meta\") modifiersHeldRef.current.cmd = false;\r\n      if (e.key === \"Shift\") modifiersHeldRef.current.shift = false;\r\n\r\n      const nowHoldingBoth =\r\n        modifiersHeldRef.current.cmd && modifiersHeldRef.current.shift;\r\n\r\n      // Released modifier while holding elements → trigger popup\r\n      if (\r\n        wasHoldingBoth &&\r\n        !nowHoldingBoth &&\r\n        pendingMultiSelectElements.length > 0\r\n      ) {\r\n        createMultiSelectPendingAnnotation();\r\n      }\r\n    };\r\n\r\n    // Reset modifier state AND clear selection when window loses focus (e.g., cmd+tab away)\r\n    const handleBlur = () => {\r\n      modifiersHeldRef.current = { cmd: false, shift: false };\r\n      setPendingMultiSelectElements([]);\r\n    };\r\n\r\n    document.addEventListener(\"keydown\", handleKeyDown);\r\n    document.addEventListener(\"keyup\", handleKeyUp);\r\n    window.addEventListener(\"blur\", handleBlur);\r\n    return () => {\r\n      document.removeEventListener(\"keydown\", handleKeyDown);\r\n      document.removeEventListener(\"keyup\", handleKeyUp);\r\n      window.removeEventListener(\"blur\", handleBlur);\r\n    };\r\n  }, [isActive, pendingMultiSelectElements, createMultiSelectPendingAnnotation]);",
+    "useEffect(() => {\r\n    if (!isActive || pendingAnnotation || isDrawMode || isDesignMode) return;\r\n\r\n    const handleMouseDown = (e: MouseEvent) => {\r\n      // Use composedPath to get actual target inside shadow DOM\r\n      const target = (e.composedPath()[0] || e.target) as HTMLElement;\r\n\r\n      if (closestCrossingShadow(target, \"[data-feedback-toolbar]\")) return;\r\n      if (closestCrossingShadow(target, \"[data-annotation-marker]\")) return;\r\n      if (closestCrossingShadow(target, \"[data-annotation-popup]\")) return;\r\n\r\n      // Don't start drag on text elements - allow native text selection\r\n      const textTags = new Set([\r\n        \"P\",\r\n        \"SPAN\",\r\n        \"H1\",\r\n        \"H2\",\r\n        \"H3\",\r\n        \"H4\",\r\n        \"H5\",\r\n        \"H6\",\r\n        \"LI\",\r\n        \"TD\",\r\n        \"TH\",\r\n        \"LABEL\",\r\n        \"BLOCKQUOTE\",\r\n        \"FIGCAPTION\",\r\n        \"CAPTION\",\r\n        \"LEGEND\",\r\n        \"DT\",\r\n        \"DD\",\r\n        \"PRE\",\r\n        \"CODE\",\r\n        \"EM\",\r\n        \"STRONG\",\r\n        \"B\",\r\n        \"I\",\r\n        \"U\",\r\n        \"S\",\r\n        \"A\",\r\n        \"TIME\",\r\n        \"ADDRESS\",\r\n        \"CITE\",\r\n        \"Q\",\r\n        \"ABBR\",\r\n        \"DFN\",\r\n        \"MARK\",\r\n        \"SMALL\",\r\n        \"SUB\",\r\n        \"SUP\",\r\n      ]);\r\n\r\n      if (textTags.has(target.tagName) || target.isContentEditable) {\r\n        return;\r\n      }\r\n\r\n      e.preventDefault(); // Prevent text selection during drag area annotation\r\n      mouseDownPosRef.current = { x: e.clientX, y: e.clientY };\r\n    };\r\n\r\n    document.addEventListener(\"mousedown\", handleMouseDown);\r\n    return () => document.removeEventListener(\"mousedown\", handleMouseDown);\r\n  }, [isActive, pendingAnnotation, isDrawMode, isDesignMode]);",
+    "useEffect(() => {\r\n    if (!isActive || pendingAnnotation) return;\r\n\r\n    const handleMouseMove = (e: MouseEvent) => {\r\n      if (!mouseDownPosRef.current) return;\r\n\r\n      const dx = e.clientX - mouseDownPosRef.current.x;\r\n      const dy = e.clientY - mouseDownPosRef.current.y;\r\n      const distance = dx * dx + dy * dy;\r\n      const thresholdSq = DRAG_THRESHOLD * DRAG_THRESHOLD;\r\n\r\n      if (!isDragging && distance >= thresholdSq) {\r\n        dragStartRef.current = mouseDownPosRef.current;\r\n        setIsDragging(true);\r\n        e.preventDefault(); // Prevent text selection during drag\r\n      }\r\n\r\n      if ((isDragging || distance >= thresholdSq) && dragStartRef.current) {\r\n        // Direct DOM update for drag rectangle - no React state\r\n        if (dragRectRef.current) {\r\n          const left = Math.min(dragStartRef.current.x, e.clientX);\r\n          const top = Math.min(dragStartRef.current.y, e.clientY);\r\n          const width = Math.abs(e.clientX - dragStartRef.current.x);\r\n          const height = Math.abs(e.clientY - dragStartRef.current.y);\r\n          dragRectRef.current.style.transform = `translate(${left}px, ${top}px)`;\r\n          dragRectRef.current.style.width = `${width}px`;\r\n          dragRectRef.current.style.height = `${height}px`;\r\n        }\r\n\r\n        // Throttle element detection (still no React re-renders)\r\n        const now = Date.now();\r\n        if (now - lastElementUpdateRef.current < ELEMENT_UPDATE_THROTTLE) {\r\n          return;\r\n        }\r\n        lastElementUpdateRef.current = now;\r\n\r\n        const startX = dragStartRef.current.x;\r\n        const startY = dragStartRef.current.y;\r\n        const left = Math.min(startX, e.clientX);\r\n        const top = Math.min(startY, e.clientY);\r\n        const right = Math.max(startX, e.clientX);\r\n        const bottom = Math.max(startY, e.clientY);\r\n        const midX = (left + right) / 2;\r\n        const midY = (top + bottom) / 2;\r\n\r\n        // Sample corners, edges, and center for element detection\r\n        const candidateElements = new Set<HTMLElement>();\r\n        const points = [\r\n          [left, top],\r\n          [right, top],\r\n          [left, bottom],\r\n          [right, bottom],\r\n          [midX, midY],\r\n          [midX, top],\r\n          [midX, bottom],\r\n          [left, midY],\r\n          [right, midY],\r\n        ];\r\n\r\n        for (const [x, y] of points) {\r\n          const elements = document.elementsFromPoint(x, y);\r\n          for (const el of elements) {\r\n            if (el instanceof HTMLElement) candidateElements.add(el);\r\n          }\r\n        }\r\n\r\n        // Also check nearby elements\r\n        const nearbyElements = document.querySelectorAll(\r\n          \"button, a, input, img, p, h1, h2, h3, h4, h5, h6, li, label, td, th, div, span, section, article, aside, nav\",\r\n        );\r\n        for (const el of nearbyElements) {\r\n          if (el instanceof HTMLElement) {\r\n            const rect = el.getBoundingClientRect();\r\n            // Check if element's center point is inside or if it overlaps significantly\r\n            const centerX = rect.left + rect.width / 2;\r\n            const centerY = rect.top + rect.height / 2;\r\n            const centerInside =\r\n              centerX >= left &&\r\n              centerX <= right &&\r\n              centerY >= top &&\r\n              centerY <= bottom;\r\n\r\n            const overlapX =\r\n              Math.min(rect.right, right) - Math.max(rect.left, left);\r\n            const overlapY =\r\n              Math.min(rect.bottom, bottom) - Math.max(rect.top, top);\r\n            const overlapArea =\r\n              overlapX > 0 && overlapY > 0 ? overlapX * overlapY : 0;\r\n            const elementArea = rect.width * rect.height;\r\n            const overlapRatio =\r\n              elementArea > 0 ? overlapArea / elementArea : 0;\r\n\r\n            if (centerInside || overlapRatio > 0.5) {\r\n              candidateElements.add(el);\r\n            }\r\n          }\r\n        }\r\n\r\n        const allMatching: DOMRect[] = [];\r\n        const meaningfulTags = new Set([\r\n          \"BUTTON\",\r\n          \"A\",\r\n          \"INPUT\",\r\n          \"IMG\",\r\n          \"P\",\r\n          \"H1\",\r\n          \"H2\",\r\n          \"H3\",\r\n          \"H4\",\r\n          \"H5\",\r\n          \"H6\",\r\n          \"LI\",\r\n          \"LABEL\",\r\n          \"TD\",\r\n          \"TH\",\r\n          \"SECTION\",\r\n          \"ARTICLE\",\r\n          \"ASIDE\",\r\n          \"NAV\",\r\n        ]);\r\n\r\n        for (const el of candidateElements) {\r\n          if (\r\n            closestCrossingShadow(el, \"[data-feedback-toolbar]\") ||\r\n            closestCrossingShadow(el, \"[data-annotation-marker]\")\r\n          )\r\n            continue;\r\n\r\n          const rect = el.getBoundingClientRect();\r\n          if (\r\n            rect.width > window.innerWidth * 0.8 &&\r\n            rect.height > window.innerHeight * 0.5\r\n          )\r\n            continue;\r\n          if (rect.width < 10 || rect.height < 10) continue;\r\n\r\n          if (\r\n            rect.left < right &&\r\n            rect.right > left &&\r\n            rect.top < bottom &&\r\n            rect.bottom > top\r\n          ) {\r\n            const tagName = el.tagName;\r\n            let shouldInclude = meaningfulTags.has(tagName);\r\n\r\n            // For divs and spans, only include if they have meaningful content\r\n            if (!shouldInclude && (tagName === \"DIV\" || tagName === \"SPAN\")) {\r\n              const hasText =\r\n                el.textContent && el.textContent.trim().length > 0;\r\n              const isInteractive =\r\n                el.onclick !== null ||\r\n                el.getAttribute(\"role\") === \"button\" ||\r\n                el.getAttribute(\"role\") === \"link\" ||\r\n                el.classList.contains(\"clickable\") ||\r\n                el.hasAttribute(\"data-clickable\");\r\n\r\n              if (\r\n                (hasText || isInteractive) &&\r\n                !el.querySelector(\"p, h1, h2, h3, h4, h5, h6, button, a\")\r\n              ) {\r\n                shouldInclude = true;\r\n              }\r\n            }\r\n\r\n            if (shouldInclude) {\r\n              // Check if any existing match contains this element (filter children)\r\n              let dominated = false;\r\n              for (const existingRect of allMatching) {\r\n                if (\r\n                  existingRect.left <= rect.left &&\r\n                  existingRect.right >= rect.right &&\r\n                  existingRect.top <= rect.top &&\r\n                  existingRect.bottom >= rect.bottom\r\n                ) {\r\n                  // Existing rect contains this one - keep the smaller one\r\n                  dominated = true;\r\n                  break;\r\n                }\r\n              }\r\n              if (!dominated) allMatching.push(rect);\r\n            }\r\n          }\r\n        }\r\n\r\n        // Direct DOM update for highlights - no React state\r\n        if (highlightsContainerRef.current) {\r\n          const container = highlightsContainerRef.current;\r\n          // Reuse existing divs or create new ones\r\n          while (container.children.length > allMatching.length) {\r\n            container.removeChild(container.lastChild!);\r\n          }\r\n          allMatching.forEach((rect, i) => {\r\n            let div = container.children[i] as HTMLDivElement;\r\n            if (!div) {\r\n              div = document.createElement(\"div\");\r\n              div.className = styles.selectedElementHighlight;\r\n              container.appendChild(div);\r\n            }\r\n            div.style.transform = `translate(${rect.left}px, ${rect.top}px)`;\r\n            div.style.width = `${rect.width}px`;\r\n            div.style.height = `${rect.height}px`;\r\n          });\r\n        }\r\n      }\r\n    };\r\n\r\n    document.addEventListener(\"mousemove\", handleMouseMove, { passive: true });\r\n    return () => document.removeEventListener(\"mousemove\", handleMouseMove);\r\n  }, [isActive, pendingAnnotation, isDragging, DRAG_THRESHOLD]);",
+    "useEffect(() => {\r\n    if (!isActive) return;\r\n\r\n    const handleMouseUp = (e: MouseEvent) => {\r\n      const wasDragging = isDragging;\r\n      const dragStart = dragStartRef.current;\r\n\r\n      if (isDragging && dragStart) {\r\n        justFinishedDragRef.current = true;\r\n\r\n        // Do final element detection for accurate count\r\n        const left = Math.min(dragStart.x, e.clientX);\r\n        const top = Math.min(dragStart.y, e.clientY);\r\n        const right = Math.max(dragStart.x, e.clientX);\r\n        const bottom = Math.max(dragStart.y, e.clientY);\r\n\r\n        // Query all meaningful elements and check bounding box intersection\r\n        const allMatching: { element: HTMLElement; rect: DOMRect }[] = [];\r\n        const selector =\r\n          \"button, a, input, img, p, h1, h2, h3, h4, h5, h6, li, label, td, th\";\r\n\r\n        document.querySelectorAll(selector).forEach((el) => {\r\n          if (!(el instanceof HTMLElement)) return;\r\n          if (\r\n            closestCrossingShadow(el, \"[data-feedback-toolbar]\") ||\r\n            closestCrossingShadow(el, \"[data-annotation-marker]\")\r\n          )\r\n            return;\r\n\r\n          const rect = el.getBoundingClientRect();\r\n          if (\r\n            rect.width > window.innerWidth * 0.8 &&\r\n            rect.height > window.innerHeight * 0.5\r\n          )\r\n            return;\r\n          if (rect.width < 10 || rect.height < 10) return;\r\n\r\n          // Check if element intersects with selection\r\n          if (\r\n            rect.left < right &&\r\n            rect.right > left &&\r\n            rect.top < bottom &&\r\n            rect.bottom > top\r\n          ) {\r\n            allMatching.push({ element: el, rect });\r\n          }\r\n        });\r\n\r\n        // Filter out parent elements that contain other matched elements\r\n        const finalElements = allMatching.filter(\r\n          ({ element: el }) =>\r\n            !allMatching.some(\r\n              ({ element: other }) => other !== el && el.contains(other),\r\n            ),\r\n        );\r\n\r\n        const x = (e.clientX / window.innerWidth) * 100;\r\n        const y = e.clientY + window.scrollY;\r\n\r\n        if (finalElements.length > 0) {\r\n          const bounds = finalElements.reduce(\r\n            (acc, { rect }) => ({\r\n              left: Math.min(acc.left, rect.left),\r\n              top: Math.min(acc.top, rect.top),\r\n              right: Math.max(acc.right, rect.right),\r\n              bottom: Math.max(acc.bottom, rect.bottom),\r\n            }),\r\n            {\r\n              left: Infinity,\r\n              top: Infinity,\r\n              right: -Infinity,\r\n              bottom: -Infinity,\r\n            },\r\n          );\r\n\r\n          const elementNames = finalElements\r\n            .slice(0, 5)\r\n            .map(({ element }) => identifyElement(element).name)\r\n            .join(\", \");\r\n          const suffix =\r\n            finalElements.length > 5\r\n              ? ` +${finalElements.length - 5} more`\r\n              : \"\";\r\n\r\n          // Capture computed styles from first element - filtered for popup, full for forensic output\r\n          const firstElement = finalElements[0].element;\r\n          const firstElementComputedStyles =\r\n            getDetailedComputedStyles(firstElement);\r\n          const firstElementComputedStylesStr =\r\n            getForensicComputedStyles(firstElement);\r\n\r\n          setPendingAnnotation({\r\n            x,\r\n            y,\r\n            clientY: e.clientY,\r\n            element: `${finalElements.length} elements: ${elementNames}${suffix}`,\r\n            elementPath: \"multi-select\",\r\n            boundingBox: {\r\n              x: bounds.left,\r\n              y: bounds.top + window.scrollY,\r\n              width: bounds.right - bounds.left,\r\n              height: bounds.bottom - bounds.top,\r\n            },\r\n            isMultiSelect: true,\r\n            // Forensic data from first element\r\n            fullPath: getFullElementPath(firstElement),\r\n            accessibility: getAccessibilityInfo(firstElement),\r\n            computedStyles: firstElementComputedStylesStr,\r\n            computedStylesObj: firstElementComputedStyles,\r\n            nearbyElements: getNearbyElements(firstElement),\r\n            cssClasses: getElementClasses(firstElement),\r\n            nearbyText: getNearbyText(firstElement),\r\n            sourceFile: detectSourceFile(firstElement),\r\n          });\r\n        } else {\r\n          // No elements selected, but allow annotation on empty area\r\n          const width = Math.abs(right - left);\r\n          const height = Math.abs(bottom - top);\r\n\r\n          // Only create if drag area is meaningful size (not just a click)\r\n          if (width > 20 && height > 20) {\r\n            setPendingAnnotation({\r\n              x,\r\n              y,\r\n              clientY: e.clientY,\r\n              element: \"Area selection\",\r\n              elementPath: `region at (${Math.round(left)}, ${Math.round(top)})`,\r\n              boundingBox: {\r\n                x: left,\r\n                y: top + window.scrollY,\r\n                width,\r\n                height,\r\n              },\r\n              isMultiSelect: true,\r\n            });\r\n          }\r\n        }\r\n        setHoverInfo(null);\r\n      } else if (wasDragging) {\r\n        justFinishedDragRef.current = true;\r\n      }\r\n\r\n      mouseDownPosRef.current = null;\r\n      dragStartRef.current = null;\r\n      setIsDragging(false);\r\n      // Clear highlights container\r\n      if (highlightsContainerRef.current) {\r\n        highlightsContainerRef.current.innerHTML = \"\";\r\n      }\r\n    };\r\n\r\n    document.addEventListener(\"mouseup\", handleMouseUp);\r\n    return () => document.removeEventListener(\"mouseup\", handleMouseUp);\r\n  }, [isActive, isDragging]);",
+    "useEffect(() => {\r\n    if (!dragStartPos) return;\r\n\r\n    const DRAG_THRESHOLD = 10; // pixels\r\n\r\n    const handleMouseMove = (e: MouseEvent) => {\r\n      const deltaX = e.clientX - dragStartPos.x;\r\n      const deltaY = e.clientY - dragStartPos.y;\r\n      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);\r\n\r\n      // Start dragging once threshold is exceeded\r\n      if (!isDraggingToolbar && distance > DRAG_THRESHOLD) {\r\n        setIsDraggingToolbar(true);\r\n      }\r\n\r\n      if (isDraggingToolbar || distance > DRAG_THRESHOLD) {\r\n        // Calculate new position\r\n        let newX = dragStartPos.toolbarX + deltaX;\r\n        let newY = dragStartPos.toolbarY + deltaY;\r\n\r\n        // Constrain to viewport\r\n        const padding = 20;\r\n        const wrapperWidth = 337; // .toolbar wrapper width\r\n        const toolbarHeight = 44;\r\n\r\n        // Content is right-aligned within wrapper via margin-left: auto\r\n        // Calculate content width based on state\r\n        const contentWidth = isActive\r\n          ? connectionStatus === \"connected\"\r\n            ? 297\r\n            : 257\r\n          : 44; // collapsed circle\r\n\r\n        // Content offset from wrapper left edge\r\n        const contentOffset = wrapperWidth - contentWidth;\r\n\r\n        // Min X: content left edge >= padding\r\n        const minX = padding - contentOffset;\r\n        // Max X: wrapper right edge <= viewport - padding\r\n        const maxX = window.innerWidth - padding - wrapperWidth;\r\n\r\n        newX = Math.max(minX, Math.min(maxX, newX));\r\n        newY = Math.max(\r\n          padding,\r\n          Math.min(window.innerHeight - toolbarHeight - padding, newY),\r\n        );\r\n\r\n        setToolbarPosition({ x: newX, y: newY });\r\n      }\r\n    };\r\n\r\n    const handleMouseUp = () => {\r\n      // If we were actually dragging, set flag to prevent click event\r\n      if (isDraggingToolbar) {\r\n        justFinishedToolbarDragRef.current = true;\r\n      }\r\n      setIsDraggingToolbar(false);\r\n      setDragStartPos(null);\r\n    };\r\n\r\n    document.addEventListener(\"mousemove\", handleMouseMove);\r\n    document.addEventListener(\"mouseup\", handleMouseUp);\r\n\r\n    return () => {\r\n      document.removeEventListener(\"mousemove\", handleMouseMove);\r\n      document.removeEventListener(\"mouseup\", handleMouseUp);\r\n    };\r\n  }, [dragStartPos, isDraggingToolbar, isActive, connectionStatus]);",
+    "useEffect(() => {\r\n    if (!toolbarPosition) return;\r\n\r\n    const constrainPosition = () => {\r\n      const padding = 20;\r\n      const wrapperWidth = 337; // .toolbar wrapper width\r\n      const toolbarHeight = 44;\r\n\r\n      let newX = toolbarPosition.x;\r\n      let newY = toolbarPosition.y;\r\n\r\n      // Content is right-aligned within wrapper via margin-left: auto\r\n      // Calculate content width based on state\r\n      const contentWidth = isActive\r\n        ? connectionStatus === \"connected\"\r\n          ? 297\r\n          : 257\r\n        : 44; // collapsed circle\r\n\r\n      // Content offset from wrapper left edge\r\n      const contentOffset = wrapperWidth - contentWidth;\r\n\r\n      // Min X: content left edge >= padding\r\n      const minX = padding - contentOffset;\r\n      // Max X: wrapper right edge <= viewport - padding\r\n      const maxX = window.innerWidth - padding - wrapperWidth;\r\n\r\n      newX = Math.max(minX, Math.min(maxX, newX));\r\n      newY = Math.max(\r\n        padding,\r\n        Math.min(window.innerHeight - toolbarHeight - padding, newY),\r\n      );\r\n\r\n      // Only update if position changed\r\n      if (newX !== toolbarPosition.x || newY !== toolbarPosition.y) {\r\n        setToolbarPosition({ x: newX, y: newY });\r\n      }\r\n    };\r\n\r\n    // Constrain immediately when isActive changes or on mount\r\n    constrainPosition();\r\n\r\n    window.addEventListener(\"resize\", constrainPosition);\r\n    return () => window.removeEventListener(\"resize\", constrainPosition);\r\n  }, [toolbarPosition, isActive, connectionStatus]);",
+    "useEffect(() => {\r\n    const handleKeyDown = (e: KeyboardEvent) => {\r\n      // Don't trigger shortcuts when typing in inputs\r\n      const target = e.target as HTMLElement;\r\n      const isTyping =\r\n        target.tagName === \"INPUT\" ||\r\n        target.tagName === \"TEXTAREA\" ||\r\n        target.isContentEditable;\r\n\r\n      if (e.key === \"Escape\") {\r\n        // Exit layout mode first if active\r\n        if (isDesignMode) {\r\n          if (activeDesignComponent) {\r\n            setActiveDesignComponent(null);\r\n          } else {\r\n            closeDesignMode();\r\n          }\r\n          return;\r\n        }\r\n        // Exit draw mode first if active\r\n        if (isDrawMode) {\r\n          setIsDrawMode(false);\r\n          return;\r\n        }\r\n        // Clear multi-select if active\r\n        if (pendingMultiSelectElements.length > 0) {\r\n          setPendingMultiSelectElements([]);\r\n          return;\r\n        }\r\n        if (pendingAnnotation) {\r\n          // Let popup handle\r\n        } else if (isActive) {\r\n          hideTooltipsUntilMouseLeave();\r\n          setIsActive(false);\r\n        }\r\n      }\r\n\r\n      // Cmd+Shift+F / Ctrl+Shift+F to toggle feedback mode\r\n      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === \"f\" || e.key === \"F\")) {\r\n        e.preventDefault();\r\n        hideTooltipsUntilMouseLeave();\r\n        if (isActive) {\r\n          deactivate();\r\n        } else {\r\n          setIsActive(true);\r\n        }\r\n        return;\r\n      }\r\n\r\n      // Skip other shortcuts if typing or modifier keys are held\r\n      if (isTyping || e.metaKey || e.ctrlKey) return;\r\n\r\n      // \"P\" to toggle pause/freeze\r\n      if (e.key === \"p\" || e.key === \"P\") {\r\n        e.preventDefault();\r\n        hideTooltipsUntilMouseLeave();\r\n        toggleFreeze();\r\n      }\r\n\r\n      // \"L\" to toggle layout mode\r\n      if (e.key === \"l\" || e.key === \"L\") {\r\n        e.preventDefault();\r\n        hideTooltipsUntilMouseLeave();\r\n        if (isDrawMode) setIsDrawMode(false);\r\n        if (showSettings) setShowSettings(false);\r\n        if (pendingAnnotation) cancelAnnotation();\r\n        if (isDesignMode) {\r\n          closeDesignMode();\r\n        } else {\r\n          setIsDesignMode(true);\r\n        }\r\n      }\r\n\r\n      // \"H\" to toggle marker visibility\r\n      if (e.key === \"h\" || e.key === \"H\") {\r\n        if (annotations.length > 0) {\r\n          e.preventDefault();\r\n          hideTooltipsUntilMouseLeave();\r\n          setShowMarkers((prev) => !prev);\r\n        }\r\n      }\r\n\r\n      // \"C\" to copy output\r\n      if (e.key === \"c\" || e.key === \"C\") {\r\n        if (annotations.length > 0 || designPlacements.length > 0 || rearrangeState) {\r\n          e.preventDefault();\r\n          hideTooltipsUntilMouseLeave();\r\n          copyOutput();\r\n        }\r\n      }\r\n\r\n      // \"X\" to clear all\r\n      if (e.key === \"x\" || e.key === \"X\") {\r\n        if (annotations.length > 0 || designPlacements.length > 0 || rearrangeState) {\r\n          e.preventDefault();\r\n          hideTooltipsUntilMouseLeave();\r\n          clearAll();\r\n          if (designPlacements.length > 0) setDesignPlacements([]);\r\n          if (rearrangeState) setRearrangeState(null);\r\n        }\r\n      }\r\n\r\n      // \"S\" to send annotations\r\n      if (e.key === \"s\" || e.key === \"S\") {\r\n        const hasValidWebhook =\r\n          isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || \"\");\r\n        if (\r\n          annotations.length > 0 &&\r\n          hasValidWebhook &&\r\n          sendState === \"idle\"\r\n        ) {\r\n          e.preventDefault();\r\n          hideTooltipsUntilMouseLeave();\r\n          sendToWebhook();\r\n        }\r\n      }\r\n    };\r\n\r\n    document.addEventListener(\"keydown\", handleKeyDown);\r\n    return () => document.removeEventListener(\"keydown\", handleKeyDown);\r\n  }, [\r\n    isActive,\r\n    isDrawMode,\r\n    isDesignMode,\r\n    activeDesignComponent,\r\n    designPlacements,\r\n    rearrangeState,\r\n    pendingAnnotation,\r\n    annotations.length,\r\n    settings.webhookUrl,\r\n    webhookUrl,\r\n    sendState,\r\n    sendToWebhook,\r\n    toggleFreeze,\r\n    copyOutput,\r\n    clearAll,\r\n    pendingMultiSelectElements,\r\n  ]);"
+  ]
+}

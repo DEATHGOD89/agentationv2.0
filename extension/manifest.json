@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Agentation",
+  "version": "1.0.0",
+  "description": "Visual feedback for AI coding agents - annotate any website",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "dist/popup.html",
+    "default_title": "Agentation",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content-script.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["dist/toolbar-bundle.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

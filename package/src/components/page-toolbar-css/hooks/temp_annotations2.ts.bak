@@ -1,0 +1,2333 @@
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+
+export function useAnnotations() {
+  const { annotations, setAnnotations, pendingAnnotation, setPendingAnnotation, editingAnnotation, setEditingAnnotation, deletingMarkerId, setDeletingMarkerId, renumberFrom, setRenumberFrom } = useAnnotations();
+  const [showMarkers, setShowMarkers] = useState(true);
+  const [markersVisible, setMarkersVisible] = useState(false);
+  const [markersExiting, setMarkersExiting] = useState(false);
+  const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
+  const placementAnnotationMap = useRef(new Map<string, string>());
+  const rearrangeAnnotationMap = useRef(new Map<string, string>());
+  const [settings, setSettings] = useState<ToolbarSettings>(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem("feedback-toolbar-settings") ?? "");
+    return {
+      ...DEFAULT_SETTINGS,
+      ...saved,
+      annotationColorId: COLOR_OPTIONS.find(c => c.id === saved.annotationColorId)
+        ? saved.annotationColorId
+        : DEFAULT_SETTINGS.annotationColorId,
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+});
+  const [animatedMarkers, setAnimatedMarkers] = useState<Set<string>>(
+    new Set(),
+  );
+  const [exitingMarkers, setExitingMarkers] = useState<Set<string>>(new Set());
+  const popupRef = useRef<AnnotationPopupCSSHandle>(null);
+  const editPopupRef = useRef<AnnotationPopupCSSHandle>(null);
+  const shouldShowMarkers = isActive && showMarkers && !isDesignMode;
+  const createMultiSelectPendingAnnotation = useCallback(() => {
+    if (pendingMultiSelectElements.length === 0) return;
+
+    const firstItem = pendingMultiSelectElements[0];
+    const firstEl = firstItem.element;
+    const isMulti = pendingMultiSelectElements.length > 1;
+
+    // Get fresh rects for all elements
+    const freshRects = pendingMultiSelectElements.map((item) =>
+      item.element.getBoundingClientRect(),
+    );
+
+    if (!isMulti) {
+      // Single element - treat as regular annotation (not multi-select)
+      const rect = freshRects[0];
+      const isFixed = isElementFixed(firstEl);
+
+      setPendingAnnotation({
+        x: (rect.left / window.innerWidth) * 100,
+        y: isFixed ? rect.top : rect.top + window.scrollY,
+        clientY: rect.top,
+        element: firstItem.name,
+        elementPath: firstItem.path,
+        boundingBox: {
+          x: rect.left,
+          y: isFixed ? rect.top : rect.top + window.scrollY,
+          width: rect.width,
+          height: rect.height,
+        },
+        isFixed,
+        fullPath: getFullElementPath(firstEl),
+        accessibility: getAccessibilityInfo(firstEl),
+        computedStyles: getForensicComputedStyles(firstEl),
+        computedStylesObj: getDetailedComputedStyles(firstEl),
+        nearbyElements: getNearbyElements(firstEl),
+        cssClasses: getElementClasses(firstEl),
+        nearbyText: getNearbyText(firstEl),
+        reactComponents: firstItem.reactComponents || undefined,
+        sourceFile: detectSourceFile(firstEl),
+        // Context captured at annotation creation time in addAnnotation
+      });
+    } else {
+      // Multiple elements - multi-select annotation
+      const bounds = {
+        left: Math.min(...freshRects.map((r) => r.left)),
+        top: Math.min(...freshRects.map((r) => r.top)),
+        right: Math.max(...freshRects.map((r) => r.right)),
+        bottom: Math.max(...freshRects.map((r) => r.bottom)),
+      };
+
+      const names = pendingMultiSelectElements
+        .slice(0, 5)
+        .map((item) => item.name)
+        .join(", ");
+      const suffix =
+        pendingMultiSelectElements.length > 5
+          ? ` +${pendingMultiSelectElements.length - 5} more`
+          : "";
+
+      const elementBoundingBoxes = freshRects.map((rect) => ({
+        x: rect.left,
+        y: rect.top + window.scrollY,
+        width: rect.width,
+        height: rect.height,
+      }));
+
+      // Position marker near the last selected element (most recent click)
+      const lastItem = pendingMultiSelectElements[pendingMultiSelectElements.length - 1];
+      const lastEl = lastItem.element;
+      const lastRect = freshRects[freshRects.length - 1];
+      const lastCenterX = lastRect.left + lastRect.width / 2;
+      const lastCenterY = lastRect.top + lastRect.height / 2;
+      const lastIsFixed = isElementFixed(lastEl);
+
+      setPendingAnnotation({
+        x: (lastCenterX / window.innerWidth) * 100,
+        y: lastIsFixed ? lastCenterY : lastCenterY + window.scrollY,
+        clientY: lastCenterY,
+        element: `${pendingMultiSelectElements.length} elements: ${names}${suffix}`,
+        elementPath: "multi-select",
+        boundingBox: {
+          x: bounds.left,
+          y: bounds.top + window.scrollY,
+          width: bounds.right - bounds.left,
+          height: bounds.bottom - bounds.top,
+        },
+        isMultiSelect: true,
+        isFixed: lastIsFixed,
+        elementBoundingBoxes,
+        multiSelectElements: pendingMultiSelectElements.map((item) => item.element),
+        targetElement: lastEl, // Anchor marker/popup to last clicked element
+        fullPath: getFullElementPath(firstEl),
+        accessibility: getAccessibilityInfo(firstEl),
+        computedStyles: getForensicComputedStyles(firstEl),
+        computedStylesObj: getDetailedComputedStyles(firstEl),
+        nearbyElements: getNearbyElements(firstEl),
+        cssClasses: getElementClasses(firstEl),
+        nearbyText: getNearbyText(firstEl),
+        sourceFile: detectSourceFile(firstEl),
+        // Context captured at annotation creation time in addAnnotation
+      });
+    }
+
+    setPendingMultiSelectElements([]);
+    setHoverInfo(null);
+  }, [pendingMultiSelectElements]);
+  const startEditAnnotation = useCallback((annotation: Annotation) => {
+    setEditingAnnotation(annotation);
+    setHoveredMarkerId(null);
+    setHoveredTargetElement(null);
+    setHoveredTargetElements([]);
+
+    // Try to find elements at the annotation's position(s) for live tracking
+    if (annotation.elementBoundingBoxes?.length) {
+      // Cmd+shift+click: find element at each bounding box center
+      const elements: HTMLElement[] = [];
+      for (const bb of annotation.elementBoundingBoxes) {
+        const centerX = bb.x + bb.width / 2;
+        const centerY = bb.y + bb.height / 2 - window.scrollY;
+        const el = deepElementFromPoint(centerX, centerY);
+        if (el) elements.push(el);
+      }
+      setEditingTargetElements(elements);
+      setEditingTargetElement(null);
+    } else if (annotation.boundingBox) {
+      // Single element
+      const bb = annotation.boundingBox;
+      const centerX = bb.x + bb.width / 2;
+      // Convert document coords to viewport coords (unless fixed)
+      const centerY = annotation.isFixed
+        ? bb.y + bb.height / 2
+        : bb.y + bb.height / 2 - window.scrollY;
+      const el = deepElementFromPoint(centerX, centerY);
+
+      // Validate found element's size roughly matches stored bounding box
+      if (el) {
+        const elRect = el.getBoundingClientRect();
+        const widthRatio = elRect.width / bb.width;
+        const heightRatio = elRect.height / bb.height;
+        if (widthRatio < 0.5 || heightRatio < 0.5) {
+          setEditingTargetElement(null);
+        } else {
+          setEditingTargetElement(el);
+        }
+      } else {
+        setEditingTargetElement(null);
+      }
+      setEditingTargetElements([]);
+    } else {
+      setEditingTargetElement(null);
+      setEditingTargetElements([]);
+    }
+  }, []);
+  const addAnnotation = useCallback(
+    (comment: string) => {
+      if (!pendingAnnotation) return;
+
+      const newAnnotation: Annotation = {
+        id: Date.now().toString(),
+        x: pendingAnnotation.x,
+        y: pendingAnnotation.y,
+        comment,
+        element: pendingAnnotation.element,
+        elementPath: pendingAnnotation.elementPath,
+        timestamp: Date.now(),
+        selectedText: pendingAnnotation.selectedText,
+        boundingBox: pendingAnnotation.boundingBox,
+        nearbyText: pendingAnnotation.nearbyText,
+        cssClasses: pendingAnnotation.cssClasses,
+        isMultiSelect: pendingAnnotation.isMultiSelect,
+        isFixed: pendingAnnotation.isFixed,
+        fullPath: pendingAnnotation.fullPath,
+        accessibility: pendingAnnotation.accessibility,
+        computedStyles: pendingAnnotation.computedStyles,
+        nearbyElements: pendingAnnotation.nearbyElements,
+        reactComponents: pendingAnnotation.reactComponents,
+        sourceFile: pendingAnnotation.sourceFile,
+        elementBoundingBoxes: pendingAnnotation.elementBoundingBoxes,
+        // Attach context from collectors (network, console, state)
+        context: (() => {
+          const snap = snapshotCollectors();
+          const ctx: Annotation["context"] = {};
+          if (snap.network.length > 0) {
+            ctx.network = snap.network.slice(0, 10).map((n) => ({
+              method: n.method,
+              url: n.url,
+              status: n.status,
+              duration: n.duration,
+              ...(n.error ? { error: n.error } : {}),
+              ...(n.responseBody ? { responseBody: n.responseBody.slice(0, 1000) } : {}),
+            }));
+          }
+          if (snap.console.length > 0) {
+            ctx.console = snap.console.slice(0, 10).map((c) => ({
+              level: c.level,
+              message: c.message.slice(0, 500),
+              ...(c.stack ? { stack: c.stack.slice(0, 500) } : {}),
+            }));
+          }
+          if (snap.state.length > 0) {
+            ctx.state = snap.state.map((s) => ({
+              storeType: s.storeType,
+              storeName: s.storeName,
+              state: s.state,
+            }));
+          }
+          return Object.keys(ctx).length > 0 ? ctx : undefined;
+        })(),
+        // Protocol fields for server sync
+        ...(endpoint && currentSessionId
+          ? {
+              sessionId: currentSessionId,
+              url:
+                typeof window !== "undefined"
+                  ? window.location.href
+                  : undefined,
+              status: "pending" as const,
+            }
+          : {}),
+      };
+
+      setAnnotations((prev) => [...prev, newAnnotation]);
+      // Prevent immediate hover on newly added marker
+      recentlyAddedIdRef.current = newAnnotation.id;
+      originalSetTimeout(() => {
+        recentlyAddedIdRef.current = null;
+      }, 300);
+      // Mark as needing animation (will be set to animated after animation completes)
+      originalSetTimeout(() => {
+        setAnimatedMarkers((prev) => new Set(prev).add(newAnnotation.id));
+      }, 250);
+
+      // Fire callback
+      onAnnotationAdd?.(newAnnotation);
+      fireWebhook("annotation.add", { annotation: newAnnotation });
+
+      // Animate out the pending annotation UI
+      setPendingExiting(true);
+      originalSetTimeout(() => {
+        setPendingAnnotation(null);
+        setPendingExiting(false);
+      }, 150);
+
+      window.getSelection()?.removeAllRanges();
+
+      // Sync to server (non-blocking, but update local ID with server's ID)
+      if (endpoint && currentSessionId) {
+        syncAnnotation(endpoint, currentSessionId, newAnnotation)
+          .then((serverAnnotation) => {
+            // Update local annotation with server-assigned ID
+            if (serverAnnotation.id !== newAnnotation.id) {
+              setAnnotations((prev) =>
+                prev.map((a) =>
+                  a.id === newAnnotation.id
+                    ? { ...a, id: serverAnnotation.id }
+                    : a,
+                ),
+              );
+              // Also update the animated markers set
+              setAnimatedMarkers((prev) => {
+                const next = new Set(prev);
+                next.delete(newAnnotation.id);
+                next.add(serverAnnotation.id);
+                return next;
+              });
+            }
+          })
+          .catch((error) => {
+            console.warn("[Agentation] Failed to sync annotation:", error);
+          });
+      }
+    },
+    [
+      pendingAnnotation,
+      onAnnotationAdd,
+      fireWebhook,
+      endpoint,
+      currentSessionId,
+    ],
+  );
+  const cancelAnnotation = useCallback(() => {
+    setPendingExiting(true);
+    originalSetTimeout(() => {
+      setPendingAnnotation(null);
+      setPendingExiting(false);
+    }, 150); // Match exit animation duration
+  }, []);
+  const deleteAnnotation = useCallback(
+    (id: string) => {
+      const deletedIndex = annotations.findIndex((a) => a.id === id);
+      const deletedAnnotation = annotations[deletedIndex];
+
+      // Close edit panel with exit animation if deleting the annotation being edited
+      if (editingAnnotation?.id === id) {
+        setEditExiting(true);
+        originalSetTimeout(() => {
+          setEditingAnnotation(null);
+          setEditingTargetElement(null);
+          setEditingTargetElements([]);
+          setEditExiting(false);
+        }, 150);
+      }
+
+      setDeletingMarkerId(id);
+      setExitingMarkers((prev) => new Set(prev).add(id));
+
+      // Fire callback
+      if (deletedAnnotation) {
+        onAnnotationDelete?.(deletedAnnotation);
+        fireWebhook("annotation.delete", { annotation: deletedAnnotation });
+      }
+
+      // Sync delete to server (non-blocking)
+      if (endpoint) {
+        deleteAnnotationFromServer(endpoint, id).catch((error) => {
+          console.warn(
+            "[Agentation] Failed to delete annotation from server:",
+            error,
+          );
+        });
+      }
+
+      // Wait for exit animation then remove
+      originalSetTimeout(() => {
+        setAnnotations((prev) => prev.filter((a) => a.id !== id));
+        setExitingMarkers((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setDeletingMarkerId(null);
+
+        // Trigger renumber animation for markers after deleted one
+        if (deletedIndex < annotations.length - 1) {
+          setRenumberFrom(deletedIndex);
+          originalSetTimeout(() => setRenumberFrom(null), 200);
+        }
+      }, 150);
+    },
+    [annotations, editingAnnotation, onAnnotationDelete, fireWebhook, endpoint],
+  );
+  const handleMarkerHover = useCallback(
+    (annotation: Annotation | null) => {
+      if (!annotation) {
+        setHoveredMarkerId(null);
+        setHoveredTargetElement(null);
+        setHoveredTargetElements([]);
+        return;
+      }
+
+      setHoveredMarkerId(annotation.id);
+
+      // Find elements at the annotation's position(s) for live tracking
+      if (annotation.elementBoundingBoxes?.length) {
+        // Cmd+shift+click: find element at each bounding box center
+        const elements: HTMLElement[] = [];
+        for (const bb of annotation.elementBoundingBoxes) {
+          const centerX = bb.x + bb.width / 2;
+          const centerY = bb.y + bb.height / 2 - window.scrollY;
+          // Use elementsFromPoint to look through the marker if it's covering
+          const allEls = document.elementsFromPoint(centerX, centerY);
+          const el = allEls.find(
+            (e) => !e.closest('[data-annotation-marker]') && !e.closest('[data-agentation-root]'),
+          ) as HTMLElement | undefined;
+          if (el) elements.push(el);
+        }
+        setHoveredTargetElements(elements);
+        setHoveredTargetElement(null);
+      } else if (annotation.boundingBox) {
+        // Single element
+        const bb = annotation.boundingBox;
+        const centerX = bb.x + bb.width / 2;
+        const centerY = annotation.isFixed
+          ? bb.y + bb.height / 2
+          : bb.y + bb.height / 2 - window.scrollY;
+        const el = deepElementFromPoint(centerX, centerY);
+
+        // Validate found element's size roughly matches stored bounding box
+        // (prevents using wrong child element when clicking center of a container)
+        if (el) {
+          const elRect = el.getBoundingClientRect();
+          const widthRatio = elRect.width / bb.width;
+          const heightRatio = elRect.height / bb.height;
+          // If found element is much smaller than stored, it's probably a child - don't use it
+          if (widthRatio < 0.5 || heightRatio < 0.5) {
+            setHoveredTargetElement(null);
+          } else {
+            setHoveredTargetElement(el);
+          }
+        } else {
+          setHoveredTargetElement(null);
+        }
+        setHoveredTargetElements([]);
+      } else {
+        setHoveredTargetElement(null);
+        setHoveredTargetElements([]);
+      }
+    },
+    [],
+  );
+  const updateAnnotation = useCallback(
+    (newComment: string) => {
+      if (!editingAnnotation) return;
+
+      const updatedAnnotation = { ...editingAnnotation, comment: newComment };
+
+      setAnnotations((prev) =>
+        prev.map((a) =>
+          a.id === editingAnnotation.id ? updatedAnnotation : a,
+        ),
+      );
+
+      // Fire callback
+      onAnnotationUpdate?.(updatedAnnotation);
+      fireWebhook("annotation.update", { annotation: updatedAnnotation });
+
+      // Sync update to server (non-blocking)
+      if (endpoint) {
+        updateAnnotationOnServer(endpoint, editingAnnotation.id, {
+          comment: newComment,
+        }).catch((error) => {
+          console.warn(
+            "[Agentation] Failed to update annotation on server:",
+            error,
+          );
+        });
+      }
+
+      // Animate out the edit popup
+      setEditExiting(true);
+      originalSetTimeout(() => {
+        setEditingAnnotation(null);
+        setEditingTargetElement(null);
+        setEditingTargetElements([]);
+        setEditExiting(false);
+      }, 150);
+    },
+    [editingAnnotation, onAnnotationUpdate, fireWebhook, endpoint],
+  );
+  const cancelEditAnnotation = useCallback(() => {
+    setEditExiting(true);
+    originalSetTimeout(() => {
+      setEditingAnnotation(null);
+      setEditingTargetElement(null);
+      setEditingTargetElements([]);
+      setEditExiting(false);
+    }, 150);
+  }, []);
+  const clearAll = useCallback(() => {
+    const count = annotations.length;
+    const hasDesign = designPlacements.length > 0 || !!rearrangeState;
+    if (count === 0 && drawStrokes.length === 0 && !hasDesign) return;
+
+    // Fire callback with all annotations before clearing
+    onAnnotationsClear?.(annotations);
+    fireWebhook("annotations.clear", { annotations });
+
+    // Sync deletions to server (non-blocking)
+    if (endpoint) {
+      Promise.all(
+        annotations.map((a) =>
+          deleteAnnotationFromServer(endpoint, a.id).catch((error) => {
+            console.warn(
+              "[Agentation] Failed to delete annotation from server:",
+              error,
+            );
+          }),
+        ),
+      );
+
+      // Delete shadow annotations for placements
+      for (const [, annotationId] of placementAnnotationMap.current) {
+        if (annotationId) {
+          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});
+        }
+      }
+      placementAnnotationMap.current.clear();
+
+      // Delete shadow annotations for rearrange
+      for (const [, annotationId] of rearrangeAnnotationMap.current) {
+        if (annotationId) {
+          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});
+        }
+      }
+      rearrangeAnnotationMap.current.clear();
+    }
+
+    setIsClearing(true);
+    setCleared(true);
+
+    // Clear draw strokes
+    setDrawStrokes([]);
+    const canvas = drawCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Animate out design placements and rearrange sections, then clear
+    if (designPlacements.length > 0 || rearrangeState) {
+      setDesignClearSignal(n => n + 1);
+      setRearrangeClearSignal(n => n + 1);
+      originalSetTimeout(() => {
+        setDesignPlacements([]);
+        setRearrangeState(null);
+      }, 200);
+    }
+    if (blankCanvas) setBlankCanvas(false);
+    if (wireframePurpose) setWireframePurpose("");
+    wireframeStashRef.current = { rearrange: null, placements: [] };
+    clearWireframeState(pathname);
+
+    const totalAnimationTime = count * 30 + 200;
+    originalSetTimeout(() => {
+      setAnnotations([]);
+      setAnimatedMarkers(new Set()); // Reset animated markers
+      localStorage.removeItem(getStorageKey(pathname));
+      setIsClearing(false);
+    }, totalAnimationTime);
+
+    originalSetTimeout(() => setCleared(false), 1500);
+  }, [pathname, annotations, drawStrokes, designPlacements, rearrangeState, blankCanvas, wireframePurpose, onAnnotationsClear, fireWebhook, endpoint]);
+  const copyOutput = useCallback(async () => {
+    const displayUrl =
+      typeof window !== "undefined"
+        ? window.location.pathname +
+          window.location.search +
+          window.location.hash
+        : pathname;
+    const wireframeOnly = isDesignMode && blankCanvas;
+
+    let output: string;
+    if (wireframeOnly) {
+      // In wireframe mode, skip annotations and draw strokes ΓÇö only include layout
+      if (designPlacements.length === 0 && !rearrangeState && !wireframePurpose) return;
+      output = "";
+    } else {
+      output = generateOutput(
+        annotations,
+        displayUrl,
+        settings.outputDetail,
+      );
+      if (!output && drawStrokes.length === 0 && designPlacements.length === 0 && !rearrangeState) return;
+      if (!output) output = `## Page Feedback: ${displayUrl}\n`;
+    }
+
+    // Describe draw strokes as text by detecting elements underneath
+    if (!wireframeOnly && drawStrokes.length > 0) {
+      // Collect drawing indices that have linked annotations (skip those in standalone section)
+      const linkedDrawingIndices = new Set<number>();
+      for (const a of annotations) {
+        if (a.drawingIndex != null) linkedDrawingIndices.add(a.drawingIndex);
+      }
+
+      // Temporarily hide the draw canvas so elementFromPoint hits real page elements
+      const canvas = drawCanvasRef.current;
+      if (canvas) canvas.style.visibility = "hidden";
+
+      const strokeDescriptions: string[] = [];
+      const scrollY = window.scrollY;
+      for (let strokeIdx = 0; strokeIdx < drawStrokes.length; strokeIdx++) {
+        // Skip strokes that have a linked annotation ΓÇö their info is in the annotation output
+        if (linkedDrawingIndices.has(strokeIdx)) continue;
+        const stroke = drawStrokes[strokeIdx];
+        if (stroke.points.length < 2) continue;
+
+        // Get viewport coords for analysis (fixed strokes are already in viewport coords)
+        const viewportPoints = stroke.fixed
+          ? stroke.points
+          : stroke.points.map(p => ({ x: p.x, y: p.y - scrollY }));
+
+        // Bounding box (viewport coords)
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const p of viewportPoints) {
+          minX = Math.min(minX, p.x);
+          minY = Math.min(minY, p.y);
+          maxX = Math.max(maxX, p.x);
+          maxY = Math.max(maxY, p.y);
+        }
+        const bboxW = maxX - minX;
+        const bboxH = maxY - minY;
+        const bboxDiag = Math.hypot(bboxW, bboxH);
+
+        // Start/end analysis
+        const start = viewportPoints[0];
+        const end = viewportPoints[viewportPoints.length - 1];
+        const startEndDist = Math.hypot(end.x - start.x, end.y - start.y);
+
+        // Gesture classification
+        let gesture: "circle" | "box" | "underline" | "arrow" | "drawing";
+        const closedLoop = startEndDist < bboxDiag * 0.35;
+        const aspectRatio = bboxW / Math.max(bboxH, 1);
+
+        if (closedLoop && bboxDiag > 20) {
+          // Closed loop ΓÇö circle vs box: measure how many points hug the bbox edges
+          // Box strokes spend time near edges; circles stay more centered
+          const edgeThreshold = Math.max(bboxW, bboxH) * 0.15;
+          let edgePoints = 0;
+          for (const p of viewportPoints) {
+            const nearLeft = p.x - minX < edgeThreshold;
+            const nearRight = maxX - p.x < edgeThreshold;
+            const nearTop = p.y - minY < edgeThreshold;
+            const nearBottom = maxY - p.y < edgeThreshold;
+            if ((nearLeft || nearRight) && (nearTop || nearBottom)) edgePoints++;
+          }
+          // If many points are near corners, it's a box
+          gesture = edgePoints > viewportPoints.length * 0.15 ? "box" : "circle";
+        } else if (aspectRatio > 3 && bboxH < 40) {
+          gesture = "underline";
+        } else if (startEndDist > bboxDiag * 0.5) {
+          gesture = "arrow";
+        } else {
+          gesture = "drawing";
+        }
+
+        // Sample elements along the stroke
+        const sampleCount = Math.min(10, viewportPoints.length);
+        const step = Math.max(1, Math.floor(viewportPoints.length / sampleCount));
+        const seenElements = new Set<HTMLElement>();
+        const elementNames: string[] = [];
+
+        const samplePoints = [start];
+        for (let i = step; i < viewportPoints.length - 1; i += step) {
+          samplePoints.push(viewportPoints[i]);
+        }
+        samplePoints.push(end);
+
+        for (const p of samplePoints) {
+          const el = deepElementFromPoint(p.x, p.y);
+          if (!el || seenElements.has(el)) continue;
+          if (closestCrossingShadow(el, "[data-feedback-toolbar]")) continue;
+          seenElements.add(el);
+          const { name } = identifyElement(el);
+          if (!elementNames.includes(name)) {
+            elementNames.push(name);
+          }
+        }
+
+        // Format description
+        const region = `${Math.round(minX)},${Math.round(minY)} ΓåÆ ${Math.round(maxX)},${Math.round(maxY)}`;
+        let desc: string;
+
+        if ((gesture === "circle" || gesture === "box") && elementNames.length > 0) {
+          const verb = gesture === "box" ? "Boxed" : "Circled";
+          desc = `${verb} **${elementNames[0]}**${elementNames.length > 1 ? ` (and ${elementNames.slice(1).join(", ")})` : ""} (region: ${region})`;
+        } else if (gesture === "underline" && elementNames.length > 0) {
+          desc = `Underlined **${elementNames[0]}** (${region})`;
+        } else if (gesture === "arrow" && elementNames.length >= 2) {
+          desc = `Arrow from **${elementNames[0]}** to **${elementNames[elementNames.length - 1]}** (${Math.round(start.x)},${Math.round(start.y)} ΓåÆ ${Math.round(end.x)},${Math.round(end.y)})`;
+        } else if (elementNames.length > 0) {
+          desc = `${gesture === "arrow" ? "Arrow" : "Drawing"} near **${elementNames.join("**, **")}** (region: ${region})`;
+        } else {
+          desc = `Drawing at ${region}`;
+        }
+        strokeDescriptions.push(desc);
+      }
+
+      // Restore canvas
+      if (canvas) canvas.style.visibility = "";
+
+      if (strokeDescriptions.length > 0) {
+        output += `\n**Drawings:**\n`;
+        strokeDescriptions.forEach((d, i) => {
+          output += `${i + 1}. ${d}\n`;
+        });
+      }
+    }
+
+    // Append design layout section if there are placements (or purpose in wireframe mode)
+    if (designPlacements.length > 0 || (wireframeOnly && wireframePurpose)) {
+      output += "\n" + generateDesignOutput(designPlacements, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }, { blankCanvas, wireframePurpose: wireframePurpose || undefined }, settings.outputDetail);
+    }
+
+    // Append rearrange section if sections were reordered
+    if (rearrangeState) {
+      const rearrangeOutput = generateRearrangeOutput(rearrangeState, settings.outputDetail, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      if (rearrangeOutput) {
+        output += "\n" + rearrangeOutput;
+      }
+    }
+
+    if (copyToClipboard) {
+      try {
+        await navigator.clipboard.writeText(output);
+      } catch {
+        // Clipboard may fail (permissions, not HTTPS, etc.) - continue anyway
+      }
+    }
+
+    // Fire callback with markdown output (always, regardless of clipboard success)
+    onCopy?.(output);
+
+    setCopied(true);
+    originalSetTimeout(() => setCopied(false), 2000);
+
+    if (settings.autoClearAfterCopy) {
+      originalSetTimeout(() => clearAll(), 500);
+    }
+  }, [
+    annotations,
+    drawStrokes,
+    designPlacements,
+    rearrangeState,
+    blankCanvas,
+    isDesignMode,
+    canvasPurpose,
+    wireframePurpose,
+    pathname,
+    settings.outputDetail,
+    effectiveReactMode,
+    settings.autoClearAfterCopy,
+    clearAll,
+    copyToClipboard,
+    onCopy,
+  ]);
+  const sendToWebhook = useCallback(async () => {
+    const displayUrl =
+      typeof window !== "undefined"
+        ? window.location.pathname +
+          window.location.search +
+          window.location.hash
+        : pathname;
+    let output = generateOutput(
+      annotations,
+      displayUrl,
+      settings.outputDetail,
+    );
+    if (!output && designPlacements.length === 0 && !rearrangeState) return;
+    if (!output) output = `## Page Feedback: ${displayUrl}\n`;
+
+    // Append design layout section if there are placements
+    if (designPlacements.length > 0) {
+      output += "\n" + generateDesignOutput(designPlacements, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }, { blankCanvas, wireframePurpose: wireframePurpose || undefined }, settings.outputDetail);
+    }
+
+    // Append rearrange section if sections were reordered
+    if (rearrangeState) {
+      const rearrangeOutput = generateRearrangeOutput(rearrangeState, settings.outputDetail, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      if (rearrangeOutput) {
+        output += "\n" + rearrangeOutput;
+      }
+    }
+
+    // Fire onSubmit callback
+    if (onSubmit) {
+      onSubmit(output, annotations);
+    }
+
+    // Start sending (arrow fades)
+    setSendState("sending");
+
+    // Brief delay for the fade effect
+    await new Promise((resolve) => originalSetTimeout(resolve, 150));
+
+    // Fire webhook and check result (force=true to bypass webhooksEnabled check for manual sends)
+    const success = await fireWebhook("submit", { output, annotations }, true);
+
+    // Show result
+    setSendState(success ? "sent" : "failed");
+    originalSetTimeout(() => setSendState("idle"), 2500);
+
+    // Clear annotations if send succeeded and autoClearAfterCopy is enabled
+    if (success && settings.autoClearAfterCopy) {
+      originalSetTimeout(() => clearAll(), 500);
+    }
+  }, [
+    onSubmit,
+    fireWebhook,
+    annotations,
+    designPlacements,
+    rearrangeState,
+    blankCanvas,
+    canvasPurpose,
+    pathname,
+    settings.outputDetail,
+    effectiveReactMode,
+    settings.autoClearAfterCopy,
+    clearAll,
+  ]);
+  const hasAnnotations = annotations.length > 0;
+  const visibleAnnotations = annotations.filter(
+    (a) => !exitingMarkers.has(a.id) && a.kind !== "placement" && a.kind !== "rearrange",
+  );
+  const hasVisibleAnnotations = visibleAnnotations.length > 0;
+  const exitingAnnotationsList = annotations.filter((a) =>
+    exitingMarkers.has(a.id),
+  );
+  const getTooltipPosition = (annotation: Annotation): React.CSSProperties => {
+    // Tooltip dimensions (from CSS)
+    const tooltipMaxWidth = 200;
+    const tooltipEstimatedHeight = 80; // Estimated max height
+    const markerSize = 22;
+    const gap = 10;
+
+    // Convert percentage-based x to pixels
+    const markerX = (annotation.x / 100) * window.innerWidth;
+    const markerY =
+      typeof annotation.y === "string"
+        ? parseFloat(annotation.y)
+        : annotation.y;
+
+    const styles: React.CSSProperties = {};
+
+    // Vertical positioning: flip if near bottom
+    const spaceBelow = window.innerHeight - markerY - markerSize - gap;
+    if (spaceBelow < tooltipEstimatedHeight) {
+      // Show above marker
+      styles.top = "auto";
+      styles.bottom = `calc(100% + ${gap}px)`;
+    }
+    // If enough space below, use default CSS (top: calc(100% + 10px))
+
+    // Horizontal positioning: adjust if near edges
+    const centerX = markerX - tooltipMaxWidth / 2;
+    const edgePadding = 10;
+
+    if (centerX < edgePadding) {
+      // Too close to left edge
+      const offset = edgePadding - centerX;
+      styles.left = `calc(50% + ${offset}px)`;
+    } else if (centerX + tooltipMaxWidth > window.innerWidth - edgePadding) {
+      // Too close to right edge
+      const overflow =
+        centerX + tooltipMaxWidth - (window.innerWidth - edgePadding);
+      styles.left = `calc(50% - ${overflow}px)`;
+    }
+    // If centered position is fine, use default CSS (left: 50%)
+
+    return styles;
+  };
+  useEffect(() => {
+    if (shouldShowMarkers) {
+      // Show markers - reset animations and make visible
+      setMarkersExiting(false);
+      setMarkersVisible(true);
+      setAnimatedMarkers(new Set());
+      // After enter animations complete, mark all as animated
+      const timer = originalSetTimeout(() => {
+        setAnimatedMarkers((prev) => {
+          const newSet = new Set(prev);
+          annotations.forEach((a) => newSet.add(a.id));
+          return newSet;
+        });
+      }, 350);
+      return () => clearTimeout(timer);
+    } else if (markersVisible) {
+      // Hide markers - start exit animation, then unmount
+      setMarkersExiting(true);
+      const timer = originalSetTimeout(() => {
+        setMarkersVisible(false);
+        setMarkersExiting(false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldShowMarkers]);
+  useEffect(() => {
+    setMounted(true);
+    setScrollY(window.scrollY);
+    startCollectors();
+    const stored = loadAnnotations<Annotation>(pathname);
+    setAnnotations(stored.filter(isRenderableAnnotation));
+
+    // Trigger entrance animation only on first load (not on SPA navigation)
+    if (!hasPlayedEntranceAnimation) {
+      setShowEntranceAnimation(true);
+      hasPlayedEntranceAnimation = true;
+      // Remove animation class after it completes (toolbar: 500ms, badge: 400ms delay + 300ms)
+      originalSetTimeout(() => setShowEntranceAnimation(false), 750);
+    }
+
+    // Load saved theme preference, default to dark mode
+    try {
+      const savedTheme = localStorage.getItem("feedback-toolbar-theme");
+      if (savedTheme !== null) {
+        setIsDarkMode(savedTheme === "dark");
+      }
+      // If no saved preference, keep default (dark mode)
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
+    // Load saved toolbar position
+    try {
+      const savedPosition = localStorage.getItem("feedback-toolbar-position");
+      if (savedPosition) {
+        const pos = JSON.parse(savedPosition);
+        if (typeof pos.x === "number" && typeof pos.y === "number") {
+          setToolbarPosition(pos);
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, [pathname]);
+  useEffect(() => {
+    if (!endpoint || !mounted || sessionInitializedRef.current) return;
+    sessionInitializedRef.current = true;
+    setConnectionStatus("connecting");
+
+    const initSession = async () => {
+      try {
+        // Check for stored session ID to rejoin on refresh
+        const storedSessionId = loadSessionId(pathname);
+        const sessionIdToJoin = initialSessionId || storedSessionId;
+        let sessionEstablished = false;
+
+        if (sessionIdToJoin) {
+          // Join existing session - server annotations are authoritative
+          try {
+            const session = await getSession(endpoint, sessionIdToJoin);
+            setCurrentSessionId(session.id);
+            setConnectionStatus("connected");
+            saveSessionId(pathname, session.id);
+            sessionEstablished = true;
+
+            // Find local annotations that need to be synced:
+            // 1. Annotations never synced to any session
+            // 2. Annotations synced to a different session
+            // 3. Annotations marked as synced to THIS session but missing from server
+            //    (handles server-side deletion)
+            const allLocalAnnotations = loadAnnotations<Annotation>(pathname);
+            const serverIds = new Set(session.annotations.map((a) => a.id));
+            const localToMerge = allLocalAnnotations.filter((a) => {
+              // If it exists on server, don't re-upload
+              if (serverIds.has(a.id)) return false;
+              // Otherwise, needs to be synced (whether never synced, synced elsewhere, or missing from server)
+              return true;
+            });
+
+            // Sync unsynced local annotations to this session
+            if (localToMerge.length > 0) {
+              const baseUrl =
+                typeof window !== "undefined" ? window.location.origin : "";
+              const pageUrl = `${baseUrl}${pathname}`;
+
+              const results = await Promise.allSettled(
+                localToMerge.map((annotation) =>
+                  syncAnnotation(endpoint, session.id, {
+                    ...annotation,
+                    sessionId: session.id,
+                    url: pageUrl,
+                  }),
+                ),
+              );
+
+              const syncedAnnotations = results.map((result, i) => {
+                if (result.status === "fulfilled") {
+                  return result.value;
+                }
+                console.warn(
+                  "[Agentation] Failed to sync annotation:",
+                  result.reason,
+                );
+                return localToMerge[i];
+              });
+
+              // Mark merged annotations as synced
+              const allAnnotations = [
+                ...session.annotations,
+                ...syncedAnnotations,
+              ];
+              setAnnotations(allAnnotations.filter(isRenderableAnnotation));
+              saveAnnotationsWithSyncMarker(
+                pathname,
+                allAnnotations.filter(isRenderableAnnotation),
+                session.id,
+              );
+            } else {
+              setAnnotations(
+                session.annotations.filter(isRenderableAnnotation),
+              );
+              saveAnnotationsWithSyncMarker(
+                pathname,
+                session.annotations.filter(isRenderableAnnotation),
+                session.id,
+              );
+            }
+          } catch (joinError) {
+            // Session doesn't exist or expired - will create new below
+            console.warn(
+              "[Agentation] Could not join session, creating new:",
+              joinError,
+            );
+            // Clear the stored session ID since it's invalid
+            clearSessionId(pathname);
+            // sessionEstablished remains false, will create new session
+          }
+        }
+
+        // Create new session if we don't have one yet (either no stored ID, or rejoin failed)
+        if (!sessionEstablished) {
+          // Create new session for current page
+          const currentUrl =
+            typeof window !== "undefined" ? window.location.href : "/";
+          const session = await createSession(endpoint, currentUrl);
+          setCurrentSessionId(session.id);
+          setConnectionStatus("connected");
+          saveSessionId(pathname, session.id);
+          onSessionCreated?.(session.id);
+
+          // Only sync annotations that have never been synced (no _syncedTo marker)
+          const allAnnotations = loadAllAnnotations<Annotation>();
+          const baseUrl =
+            typeof window !== "undefined" ? window.location.origin : "";
+
+          // Sync annotations from all pages in parallel
+          const syncPromises: Promise<void>[] = [];
+          for (const [pagePath, annotations] of allAnnotations) {
+            // Filter to only unsynced annotations
+            const unsyncedAnnotations = annotations.filter(
+              (a) => !(a as Annotation & { _syncedTo?: string })._syncedTo,
+            );
+            if (unsyncedAnnotations.length === 0) continue;
+
+            const pageUrl = `${baseUrl}${pagePath}`;
+            const isCurrentPage = pagePath === pathname;
+
+            syncPromises.push(
+              (async () => {
+                try {
+                  // Use current session for current page, create new sessions for other pages
+                  const targetSession = isCurrentPage
+                    ? session
+                    : await createSession(endpoint, pageUrl);
+
+                  const results = await Promise.allSettled(
+                    unsyncedAnnotations.map((annotation) =>
+                      syncAnnotation(endpoint, targetSession.id, {
+                        ...annotation,
+                        sessionId: targetSession.id,
+                        url: pageUrl,
+                      }),
+                    ),
+                  );
+
+                  // Mark synced annotations and update local state for current page
+                  const syncedAnnotations = results.map((result, i) => {
+                    if (result.status === "fulfilled") {
+                      return result.value;
+                    }
+                    console.warn(
+                      "[Agentation] Failed to sync annotation:",
+                      result.reason,
+                    );
+                    return unsyncedAnnotations[i];
+                  });
+
+                  const renderableSyncedAnnotations = syncedAnnotations.filter(
+                    isRenderableAnnotation,
+                  );
+
+                  // Save with sync marker
+                  saveAnnotationsWithSyncMarker(
+                    pagePath,
+                    renderableSyncedAnnotations,
+                    targetSession.id,
+                  );
+
+                  if (isCurrentPage) {
+                    const originalIds = new Set(
+                      unsyncedAnnotations.map((a) => a.id),
+                    );
+                    setAnnotations((prev) => {
+                      const newDuringSync = prev.filter(
+                        (a) => !originalIds.has(a.id),
+                      );
+                      return [...renderableSyncedAnnotations, ...newDuringSync];
+                    });
+                  }
+                } catch (err) {
+                  console.warn(
+                    `[Agentation] Failed to sync annotations for ${pagePath}:`,
+                    err,
+                  );
+                }
+              })(),
+            );
+          }
+
+          await Promise.allSettled(syncPromises);
+        }
+      } catch (error) {
+        // Network error - continue in local-only mode
+        setConnectionStatus("disconnected");
+        console.warn(
+          "[Agentation] Failed to initialize session, using local storage:",
+          error,
+        );
+      }
+    };
+
+    initSession();
+  }, [endpoint, initialSessionId, mounted, onSessionCreated, pathname]);
+  useEffect(() => {
+    if (!endpoint || !mounted || !currentSessionId) return;
+
+    const eventSource = new EventSource(
+      `${endpoint}/sessions/${currentSessionId}/events`
+    );
+
+    const removedStatuses = ["resolved", "dismissed"];
+
+    const handler = (e: MessageEvent) => {
+      try {
+        const event = JSON.parse(e.data);
+        if (removedStatuses.includes(event.payload?.status)) {
+          const id = event.payload.id as string;
+          const kind = event.payload.kind as string | undefined;
+
+          if (kind === "placement") {
+            // Reverse-lookup: find which placementId maps to this annotation ID
+            for (const [placementId, annotationId] of placementAnnotationMap.current) {
+              if (annotationId === id) {
+                placementAnnotationMap.current.delete(placementId);
+                setDesignPlacements((prev) => prev.filter((p) => p.id !== placementId));
+                break;
+              }
+            }
+          } else if (kind === "rearrange") {
+            // Reverse-lookup: find which sectionId maps to this annotation ID
+            for (const [sectionId, annotationId] of rearrangeAnnotationMap.current) {
+              if (annotationId === id) {
+                rearrangeAnnotationMap.current.delete(sectionId);
+                setRearrangeState((prev) => {
+                  if (!prev) return null;
+                  const remaining = prev.sections.filter((s) => s.id !== sectionId);
+                  if (remaining.length === 0) return null;
+                  return { ...prev, sections: remaining };
+                });
+                break;
+              }
+            }
+          } else {
+            // Feedback annotation ΓÇö trigger exit animation then remove
+            setExitingMarkers((prev) => new Set(prev).add(id));
+            originalSetTimeout(() => {
+              setAnnotations((prev) => prev.filter((a) => a.id !== id));
+              setExitingMarkers((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+              });
+            }, 150);
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    };
+
+    eventSource.addEventListener("annotation.updated", handler);
+
+    return () => {
+      eventSource.removeEventListener("annotation.updated", handler);
+      eventSource.close();
+    };
+  }, [endpoint, mounted, currentSessionId]);
+  useEffect(() => {
+    if (!endpoint || !mounted) return;
+
+    // Check if we just reconnected (was disconnected, now connected)
+    const wasDisconnected = prevConnectionStatusRef.current === "disconnected";
+    const isNowConnected = connectionStatus === "connected";
+    prevConnectionStatusRef.current = connectionStatus;
+
+    if (wasDisconnected && isNowConnected) {
+      // Sync any local annotations that aren't on the server
+      const syncLocalAnnotations = async () => {
+        try {
+          const localAnnotations = loadAnnotations<Annotation>(pathname);
+          if (localAnnotations.length === 0) return;
+
+          const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+          const pageUrl = `${baseUrl}${pathname}`;
+
+          // Get or create session
+          let sessionId = currentSessionId;
+          let serverAnnotations: Annotation[] = [];
+
+          if (sessionId) {
+            // Try to get existing session
+            try {
+              const session = await getSession(endpoint, sessionId);
+              serverAnnotations = session.annotations;
+            } catch {
+              // Session doesn't exist anymore, create new one
+              sessionId = null;
+            }
+          }
+
+          if (!sessionId) {
+            // Create new session
+            const newSession = await createSession(endpoint, pageUrl);
+            sessionId = newSession.id;
+            setCurrentSessionId(sessionId);
+            saveSessionId(pathname, sessionId);
+          }
+
+          // Find annotations that need syncing
+          const serverIds = new Set(serverAnnotations.map((a) => a.id));
+          const unsyncedLocal = localAnnotations.filter((a) => !serverIds.has(a.id));
+
+          if (unsyncedLocal.length > 0) {
+            const results = await Promise.allSettled(
+              unsyncedLocal.map((annotation) =>
+                syncAnnotation(endpoint, sessionId!, {
+                  ...annotation,
+                  sessionId: sessionId!,
+                  url: pageUrl,
+                })
+              )
+            );
+
+            const syncedAnnotations = results.map((result, i) => {
+              if (result.status === "fulfilled") {
+                return result.value;
+              }
+              console.warn("[Agentation] Failed to sync annotation on reconnect:", result.reason);
+              return unsyncedLocal[i];
+            });
+
+            // Update local state with server + synced annotations
+            const allAnnotations = [...serverAnnotations, ...syncedAnnotations];
+            const renderableAnnotations = allAnnotations.filter(
+              isRenderableAnnotation,
+            );
+            setAnnotations(renderableAnnotations);
+            saveAnnotationsWithSyncMarker(
+              pathname,
+              renderableAnnotations,
+              sessionId!,
+            );
+          }
+        } catch (err) {
+          console.warn("[Agentation] Failed to sync on reconnect:", err);
+        }
+      };
+
+      syncLocalAnnotations();
+    }
+  }, [connectionStatus, endpoint, mounted, currentSessionId, pathname]);
+  useEffect(() => {
+    if (!enableDemoMode) return;
+    if (!mounted || !demoAnnotations || demoAnnotations.length === 0) return;
+    if (annotations.length > 0) return;
+
+    const timeoutIds: ReturnType<typeof originalSetTimeout>[] = [];
+
+    timeoutIds.push(
+      originalSetTimeout(() => {
+        setIsActive(true);
+      }, demoDelay - 200),
+    );
+
+    demoAnnotations.forEach((demo, index) => {
+      const annotationDelay = demoDelay + index * 300;
+
+      timeoutIds.push(
+        originalSetTimeout(() => {
+          const element = document.querySelector(demo.selector) as HTMLElement;
+          if (!element) return;
+
+          const rect = element.getBoundingClientRect();
+          const { name, path } = identifyElement(element);
+
+          const newAnnotation: Annotation = {
+            id: `demo-${Date.now()}-${index}`,
+            x: ((rect.left + rect.width / 2) / window.innerWidth) * 100,
+            y: rect.top + rect.height / 2 + window.scrollY,
+            comment: demo.comment,
+            element: name,
+            elementPath: path,
+            timestamp: Date.now(),
+            selectedText: demo.selectedText,
+            boundingBox: {
+              x: rect.left,
+              y: rect.top + window.scrollY,
+              width: rect.width,
+              height: rect.height,
+            },
+            nearbyText: getNearbyText(element),
+            cssClasses: getElementClasses(element),
+          };
+
+          setAnnotations((prev) => [...prev, newAnnotation]);
+        }, annotationDelay),
+      );
+    });
+
+    return () => {
+      timeoutIds.forEach(clearTimeout);
+    };
+  }, [enableDemoMode, mounted, demoAnnotations, demoDelay]);
+  useEffect(() => {
+    if (mounted && annotations.length > 0) {
+      if (currentSessionId) {
+        // Connected to session - save with sync marker to prevent re-upload on refresh
+        saveAnnotationsWithSyncMarker(pathname, annotations, currentSessionId);
+      } else {
+        // Not connected - save without markers (will sync when connected)
+        saveAnnotations(pathname, annotations);
+      }
+    } else if (mounted && annotations.length === 0) {
+      localStorage.removeItem(getStorageKey(pathname));
+    }
+  }, [annotations, pathname, mounted, currentSessionId]);
+  useEffect(() => {
+    if (!endpoint || !currentSessionId) return;
+
+    const currentMap = placementAnnotationMap.current;
+    const currentIds = new Set(designPlacements.map((p) => p.id));
+
+    // Create annotations for new placements
+    for (const p of designPlacements) {
+      if (currentMap.has(p.id)) continue;
+
+      // Mark as in-flight to avoid duplicates
+      currentMap.set(p.id, "");
+
+      const pageUrl =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search + window.location.hash
+          : pathname;
+
+      syncAnnotation(endpoint, currentSessionId, {
+        id: p.id,
+        x: (p.x / window.innerWidth) * 100,
+        y: p.y,
+        comment: `Place ${p.type} at (${Math.round(p.x)}, ${Math.round(p.y)}), ${p.width}├ù${p.height}px${p.text ? ` ΓÇö "${p.text}"` : ""}`,
+        element: `[design:${p.type}]`,
+        elementPath: "[placement]",
+        timestamp: p.timestamp,
+        url: pageUrl,
+        intent: "change",
+        severity: "important",
+        kind: "placement",
+        placement: {
+          componentType: p.type,
+          width: p.width,
+          height: p.height,
+          scrollY: p.scrollY,
+          text: p.text,
+        },
+      } as Annotation)
+        .then((serverAnnotation) => {
+          // Update map with real server ID
+          if (currentMap.has(p.id)) {
+            currentMap.set(p.id, serverAnnotation.id);
+          }
+        })
+        .catch((err) => {
+          console.warn("[Agentation] Failed to sync placement annotation:", err);
+          currentMap.delete(p.id);
+        });
+    }
+
+    // Delete annotations for removed placements
+    for (const [placementId, annotationId] of currentMap) {
+      if (!currentIds.has(placementId)) {
+        currentMap.delete(placementId);
+        if (annotationId) {
+          deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});
+        }
+      }
+    }
+  }, [designPlacements, endpoint, currentSessionId, pathname]);
+  useEffect(() => {
+    if (!endpoint || !currentSessionId) return;
+
+    if (rearrangeDebounceTimer.current) {
+      clearTimeout(rearrangeDebounceTimer.current);
+    }
+
+    rearrangeDebounceTimer.current = originalSetTimeout(() => {
+      const currentMap = rearrangeAnnotationMap.current;
+
+      if (!rearrangeState || rearrangeState.sections.length === 0) {
+        // Rearrange cleared ΓÇö delete all shadow annotations
+        for (const [, annotationId] of currentMap) {
+          if (annotationId) {
+            deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});
+          }
+        }
+        currentMap.clear();
+        return;
+      }
+
+      const currentIds = new Set(rearrangeState.sections.map((s) => s.id));
+      const pageUrl =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search + window.location.hash
+          : pathname;
+
+      // Check which sections have actually changed from original
+      for (const section of rearrangeState.sections) {
+        const orig = section.originalRect;
+        const curr = section.currentRect;
+        const hasMoved =
+          Math.abs(orig.x - curr.x) > 1 ||
+          Math.abs(orig.y - curr.y) > 1 ||
+          Math.abs(orig.width - curr.width) > 1 ||
+          Math.abs(orig.height - curr.height) > 1;
+
+        if (!hasMoved) {
+          // Section returned to original ΓÇö delete annotation if exists
+          const existingId = currentMap.get(section.id);
+          if (existingId) {
+            currentMap.delete(section.id);
+            deleteAnnotationFromServer(endpoint, existingId).catch(() => {});
+          }
+          continue;
+        }
+
+        const existingAnnotationId = currentMap.get(section.id);
+        if (existingAnnotationId) {
+          // Update existing
+          updateAnnotationOnServer(endpoint, existingAnnotationId, {
+            comment: `Move ${section.label} section (${section.tagName}) ΓÇö from (${Math.round(orig.x)},${Math.round(orig.y)}) ${Math.round(orig.width)}├ù${Math.round(orig.height)} to (${Math.round(curr.x)},${Math.round(curr.y)}) ${Math.round(curr.width)}├ù${Math.round(curr.height)}`,
+          }).catch((err) => {
+            console.warn("[Agentation] Failed to update rearrange annotation:", err);
+          });
+        } else {
+          // Create new
+          currentMap.set(section.id, "");
+
+          syncAnnotation(endpoint, currentSessionId, {
+            id: section.id,
+            x: (curr.x / window.innerWidth) * 100,
+            y: curr.y,
+            comment: `Move ${section.label} section (${section.tagName}) ΓÇö from (${Math.round(orig.x)},${Math.round(orig.y)}) ${Math.round(orig.width)}├ù${Math.round(orig.height)} to (${Math.round(curr.x)},${Math.round(curr.y)}) ${Math.round(curr.width)}├ù${Math.round(curr.height)}`,
+            element: section.selector,
+            elementPath: "[rearrange]",
+            timestamp: Date.now(),
+            url: pageUrl,
+            intent: "change",
+            severity: "important",
+            kind: "rearrange",
+            rearrange: {
+              selector: section.selector,
+              label: section.label,
+              tagName: section.tagName,
+              originalRect: orig,
+              currentRect: curr,
+            },
+          } as Annotation)
+            .then((serverAnnotation) => {
+              if (currentMap.has(section.id)) {
+                currentMap.set(section.id, serverAnnotation.id);
+              }
+            })
+            .catch((err) => {
+              console.warn("[Agentation] Failed to sync rearrange annotation:", err);
+              currentMap.delete(section.id);
+            });
+        }
+      }
+
+      // Delete annotations for sections no longer in state
+      for (const [sectionId, annotationId] of currentMap) {
+        if (!currentIds.has(sectionId)) {
+          currentMap.delete(sectionId);
+          if (annotationId) {
+            deleteAnnotationFromServer(endpoint, annotationId).catch(() => {});
+          }
+        }
+      }
+    }, 300);
+
+    return () => {
+      if (rearrangeDebounceTimer.current) {
+        clearTimeout(rearrangeDebounceTimer.current);
+      }
+    };
+  }, [rearrangeState, endpoint, currentSessionId, pathname]);
+  useEffect(() => {
+    if (!isActive) {
+      setPendingAnnotation(null);
+      setEditingAnnotation(null);
+      setEditingTargetElement(null);
+      setEditingTargetElements([]);
+      setHoverInfo(null);
+      setShowSettings(false); // Close settings when toolbar closes
+      setPendingMultiSelectElements([]); // Clear multi-select
+      modifiersHeldRef.current = { cmd: false, shift: false }; // Reset modifier tracking
+      if (isFrozen) {
+        unfreezeAnimations();
+      }
+    }
+  }, [isActive, isFrozen, unfreezeAnimations]);
+  useEffect(() => {
+    if (!isActive || pendingAnnotation || isDrawMode || isDesignMode) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Use composedPath to get actual target inside shadow DOM
+      const target = (e.composedPath()[0] || e.target) as HTMLElement;
+      if (closestCrossingShadow(target, "[data-feedback-toolbar]")) {
+        setHoverInfo(null);
+        return;
+      }
+
+      const elementUnder = deepElementFromPoint(e.clientX, e.clientY);
+      if (
+        !elementUnder ||
+        closestCrossingShadow(elementUnder, "[data-feedback-toolbar]")
+      ) {
+        setHoverInfo(null);
+        return;
+      }
+
+      const { name, elementName, path, reactComponents } =
+        identifyElementWithReact(elementUnder, effectiveReactMode);
+      const rect = elementUnder.getBoundingClientRect();
+
+      setHoverInfo({
+        element: name,
+        elementName,
+        elementPath: path,
+        rect,
+        reactComponents,
+      });
+      setHoverPosition({ x: e.clientX, y: e.clientY });
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, [isActive, pendingAnnotation, isDrawMode, isDesignMode, effectiveReactMode, drawStrokes]);
+  useEffect(() => {
+    if (!isActive || isDrawMode || isDesignMode) return;
+
+    const handleClick = (e: MouseEvent) => {
+      if (justFinishedDragRef.current) {
+        justFinishedDragRef.current = false;
+        return;
+      }
+
+      // Use composedPath to get actual target inside shadow DOM, falling back to e.target
+      const target = (e.composedPath()[0] || e.target) as HTMLElement;
+
+      if (closestCrossingShadow(target, "[data-feedback-toolbar]")) return;
+      if (closestCrossingShadow(target, "[data-annotation-popup]")) return;
+      if (closestCrossingShadow(target, "[data-annotation-marker]")) return;
+
+      // Handle cmd+shift+click for multi-element selection
+      if (e.metaKey && e.shiftKey && !pendingAnnotation && !editingAnnotation) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const elementUnder = deepElementFromPoint(e.clientX, e.clientY);
+        if (!elementUnder) return;
+
+        const rect = elementUnder.getBoundingClientRect();
+        const { name, path, reactComponents } = identifyElementWithReact(
+          elementUnder,
+          effectiveReactMode,
+        );
+
+        // Toggle: check if already selected
+        const existingIndex = pendingMultiSelectElements.findIndex(
+          (item) => item.element === elementUnder,
+        );
+
+        if (existingIndex >= 0) {
+          // Deselect
+          setPendingMultiSelectElements((prev) =>
+            prev.filter((_, i) => i !== existingIndex),
+          );
+        } else {
+          // Select
+          setPendingMultiSelectElements((prev) => [
+            ...prev,
+            {
+              element: elementUnder,
+              rect,
+              name,
+              path,
+              reactComponents: reactComponents ?? undefined,
+            },
+          ]);
+        }
+        return;
+      }
+
+      const isInteractive = closestCrossingShadow(
+        target,
+        "button, a, input, select, textarea, [role='button'], [onclick]",
+      );
+
+      // Block interactions on interactive elements when enabled
+      if (settings.blockInteractions && isInteractive) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Still create annotation on the interactive element
+      }
+
+      if (pendingAnnotation) {
+        if (isInteractive && !settings.blockInteractions) {
+          return;
+        }
+        e.preventDefault();
+        popupRef.current?.shake();
+        return;
+      }
+
+      if (editingAnnotation) {
+        if (isInteractive && !settings.blockInteractions) {
+          return;
+        }
+        e.preventDefault();
+        editPopupRef.current?.shake();
+        return;
+      }
+
+      e.preventDefault();
+
+      const elementUnder = deepElementFromPoint(e.clientX, e.clientY);
+      if (!elementUnder) return;
+
+      const { name, path, reactComponents } = identifyElementWithReact(
+        elementUnder,
+        effectiveReactMode,
+      );
+      const rect = elementUnder.getBoundingClientRect();
+      const x = (e.clientX / window.innerWidth) * 100;
+
+      const isFixed = isElementFixed(elementUnder);
+      const y = isFixed ? e.clientY : e.clientY + window.scrollY;
+
+      const selection = window.getSelection();
+      let selectedText: string | undefined;
+      if (selection && selection.toString().trim().length > 0) {
+        selectedText = selection.toString().trim().slice(0, 500);
+      }
+
+      // Capture computed styles - filtered for popup, full for forensic output
+      const computedStylesObj = getDetailedComputedStyles(elementUnder);
+      const computedStylesStr = getForensicComputedStyles(elementUnder);
+
+      setPendingAnnotation({
+        x,
+        y,
+        clientY: e.clientY,
+        element: name,
+        elementPath: path,
+        selectedText,
+        boundingBox: {
+          x: rect.left,
+          y: isFixed ? rect.top : rect.top + window.scrollY,
+          width: rect.width,
+          height: rect.height,
+        },
+        nearbyText: getNearbyText(elementUnder),
+        cssClasses: getElementClasses(elementUnder),
+        isFixed,
+        fullPath: getFullElementPath(elementUnder),
+        accessibility: getAccessibilityInfo(elementUnder),
+        computedStyles: computedStylesStr,
+        computedStylesObj,
+        nearbyElements: getNearbyElements(elementUnder),
+        reactComponents: reactComponents ?? undefined,
+        sourceFile: detectSourceFile(elementUnder),
+        targetElement: elementUnder, // Store for live position queries
+        // Context captured at annotation creation time in addAnnotation
+      });
+      setHoverInfo(null);
+    };
+
+    // Use capture phase to intercept before element handlers
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [
+    isActive,
+    isDrawMode,
+    isDesignMode,
+    pendingAnnotation,
+    editingAnnotation,
+    settings.blockInteractions,
+    effectiveReactMode,
+    pendingMultiSelectElements,
+  ]);
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Meta") modifiersHeldRef.current.cmd = true;
+      if (e.key === "Shift") modifiersHeldRef.current.shift = true;
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const wasHoldingBoth =
+        modifiersHeldRef.current.cmd && modifiersHeldRef.current.shift;
+
+      if (e.key === "Meta") modifiersHeldRef.current.cmd = false;
+      if (e.key === "Shift") modifiersHeldRef.current.shift = false;
+
+      const nowHoldingBoth =
+        modifiersHeldRef.current.cmd && modifiersHeldRef.current.shift;
+
+      // Released modifier while holding elements ΓåÆ trigger popup
+      if (
+        wasHoldingBoth &&
+        !nowHoldingBoth &&
+        pendingMultiSelectElements.length > 0
+      ) {
+        createMultiSelectPendingAnnotation();
+      }
+    };
+
+    // Reset modifier state AND clear selection when window loses focus (e.g., cmd+tab away)
+    const handleBlur = () => {
+      modifiersHeldRef.current = { cmd: false, shift: false };
+      setPendingMultiSelectElements([]);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [isActive, pendingMultiSelectElements, createMultiSelectPendingAnnotation]);
+  useEffect(() => {
+    if (!isActive || pendingAnnotation || isDrawMode || isDesignMode) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Use composedPath to get actual target inside shadow DOM
+      const target = (e.composedPath()[0] || e.target) as HTMLElement;
+
+      if (closestCrossingShadow(target, "[data-feedback-toolbar]")) return;
+      if (closestCrossingShadow(target, "[data-annotation-marker]")) return;
+      if (closestCrossingShadow(target, "[data-annotation-popup]")) return;
+
+      // Don't start drag on text elements - allow native text selection
+      const textTags = new Set([
+        "P",
+        "SPAN",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "LI",
+        "TD",
+        "TH",
+        "LABEL",
+        "BLOCKQUOTE",
+        "FIGCAPTION",
+        "CAPTION",
+        "LEGEND",
+        "DT",
+        "DD",
+        "PRE",
+        "CODE",
+        "EM",
+        "STRONG",
+        "B",
+        "I",
+        "U",
+        "S",
+        "A",
+        "TIME",
+        "ADDRESS",
+        "CITE",
+        "Q",
+        "ABBR",
+        "DFN",
+        "MARK",
+        "SMALL",
+        "SUB",
+        "SUP",
+      ]);
+
+      if (textTags.has(target.tagName) || target.isContentEditable) {
+        return;
+      }
+
+      e.preventDefault(); // Prevent text selection during drag area annotation
+      mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [isActive, pendingAnnotation, isDrawMode, isDesignMode]);
+  useEffect(() => {
+    if (!isActive || pendingAnnotation) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!mouseDownPosRef.current) return;
+
+      const dx = e.clientX - mouseDownPosRef.current.x;
+      const dy = e.clientY - mouseDownPosRef.current.y;
+      const distance = dx * dx + dy * dy;
+      const thresholdSq = DRAG_THRESHOLD * DRAG_THRESHOLD;
+
+      if (!isDragging && distance >= thresholdSq) {
+        dragStartRef.current = mouseDownPosRef.current;
+        setIsDragging(true);
+        e.preventDefault(); // Prevent text selection during drag
+      }
+
+      if ((isDragging || distance >= thresholdSq) && dragStartRef.current) {
+        // Direct DOM update for drag rectangle - no React state
+        if (dragRectRef.current) {
+          const left = Math.min(dragStartRef.current.x, e.clientX);
+          const top = Math.min(dragStartRef.current.y, e.clientY);
+          const width = Math.abs(e.clientX - dragStartRef.current.x);
+          const height = Math.abs(e.clientY - dragStartRef.current.y);
+          dragRectRef.current.style.transform = `translate(${left}px, ${top}px)`;
+          dragRectRef.current.style.width = `${width}px`;
+          dragRectRef.current.style.height = `${height}px`;
+        }
+
+        // Throttle element detection (still no React re-renders)
+        const now = Date.now();
+        if (now - lastElementUpdateRef.current < ELEMENT_UPDATE_THROTTLE) {
+          return;
+        }
+        lastElementUpdateRef.current = now;
+
+        const startX = dragStartRef.current.x;
+        const startY = dragStartRef.current.y;
+        const left = Math.min(startX, e.clientX);
+        const top = Math.min(startY, e.clientY);
+        const right = Math.max(startX, e.clientX);
+        const bottom = Math.max(startY, e.clientY);
+        const midX = (left + right) / 2;
+        const midY = (top + bottom) / 2;
+
+        // Sample corners, edges, and center for element detection
+        const candidateElements = new Set<HTMLElement>();
+        const points = [
+          [left, top],
+          [right, top],
+          [left, bottom],
+          [right, bottom],
+          [midX, midY],
+          [midX, top],
+          [midX, bottom],
+          [left, midY],
+          [right, midY],
+        ];
+
+        for (const [x, y] of points) {
+          const elements = document.elementsFromPoint(x, y);
+          for (const el of elements) {
+            if (el instanceof HTMLElement) candidateElements.add(el);
+          }
+        }
+
+        // Also check nearby elements
+        const nearbyElements = document.querySelectorAll(
+          "button, a, input, img, p, h1, h2, h3, h4, h5, h6, li, label, td, th, div, span, section, article, aside, nav",
+        );
+        for (const el of nearbyElements) {
+          if (el instanceof HTMLElement) {
+            const rect = el.getBoundingClientRect();
+            // Check if element's center point is inside or if it overlaps significantly
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const centerInside =
+              centerX >= left &&
+              centerX <= right &&
+              centerY >= top &&
+              centerY <= bottom;
+
+            const overlapX =
+              Math.min(rect.right, right) - Math.max(rect.left, left);
+            const overlapY =
+              Math.min(rect.bottom, bottom) - Math.max(rect.top, top);
+            const overlapArea =
+              overlapX > 0 && overlapY > 0 ? overlapX * overlapY : 0;
+            const elementArea = rect.width * rect.height;
+            const overlapRatio =
+              elementArea > 0 ? overlapArea / elementArea : 0;
+
+            if (centerInside || overlapRatio > 0.5) {
+              candidateElements.add(el);
+            }
+          }
+        }
+
+        const allMatching: DOMRect[] = [];
+        const meaningfulTags = new Set([
+          "BUTTON",
+          "A",
+          "INPUT",
+          "IMG",
+          "P",
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "LI",
+          "LABEL",
+          "TD",
+          "TH",
+          "SECTION",
+          "ARTICLE",
+          "ASIDE",
+          "NAV",
+        ]);
+
+        for (const el of candidateElements) {
+          if (
+            closestCrossingShadow(el, "[data-feedback-toolbar]") ||
+            closestCrossingShadow(el, "[data-annotation-marker]")
+          )
+            continue;
+
+          const rect = el.getBoundingClientRect();
+          if (
+            rect.width > window.innerWidth * 0.8 &&
+            rect.height > window.innerHeight * 0.5
+          )
+            continue;
+          if (rect.width < 10 || rect.height < 10) continue;
+
+          if (
+            rect.left < right &&
+            rect.right > left &&
+            rect.top < bottom &&
+            rect.bottom > top
+          ) {
+            const tagName = el.tagName;
+            let shouldInclude = meaningfulTags.has(tagName);
+
+            // For divs and spans, only include if they have meaningful content
+            if (!shouldInclude && (tagName === "DIV" || tagName === "SPAN")) {
+              const hasText =
+                el.textContent && el.textContent.trim().length > 0;
+              const isInteractive =
+                el.onclick !== null ||
+                el.getAttribute("role") === "button" ||
+                el.getAttribute("role") === "link" ||
+                el.classList.contains("clickable") ||
+                el.hasAttribute("data-clickable");
+
+              if (
+                (hasText || isInteractive) &&
+                !el.querySelector("p, h1, h2, h3, h4, h5, h6, button, a")
+              ) {
+                shouldInclude = true;
+              }
+            }
+
+            if (shouldInclude) {
+              // Check if any existing match contains this element (filter children)
+              let dominated = false;
+              for (const existingRect of allMatching) {
+                if (
+                  existingRect.left <= rect.left &&
+                  existingRect.right >= rect.right &&
+                  existingRect.top <= rect.top &&
+                  existingRect.bottom >= rect.bottom
+                ) {
+                  // Existing rect contains this one - keep the smaller one
+                  dominated = true;
+                  break;
+                }
+              }
+              if (!dominated) allMatching.push(rect);
+            }
+          }
+        }
+
+        // Direct DOM update for highlights - no React state
+        if (highlightsContainerRef.current) {
+          const container = highlightsContainerRef.current;
+          // Reuse existing divs or create new ones
+          while (container.children.length > allMatching.length) {
+            container.removeChild(container.lastChild!);
+          }
+          allMatching.forEach((rect, i) => {
+            let div = container.children[i] as HTMLDivElement;
+            if (!div) {
+              div = document.createElement("div");
+              div.className = styles.selectedElementHighlight;
+              container.appendChild(div);
+            }
+            div.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+            div.style.width = `${rect.width}px`;
+            div.style.height = `${rect.height}px`;
+          });
+        }
+      }
+    };
+
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, [isActive, pendingAnnotation, isDragging, DRAG_THRESHOLD]);
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleMouseUp = (e: MouseEvent) => {
+      const wasDragging = isDragging;
+      const dragStart = dragStartRef.current;
+
+      if (isDragging && dragStart) {
+        justFinishedDragRef.current = true;
+
+        // Do final element detection for accurate count
+        const left = Math.min(dragStart.x, e.clientX);
+        const top = Math.min(dragStart.y, e.clientY);
+        const right = Math.max(dragStart.x, e.clientX);
+        const bottom = Math.max(dragStart.y, e.clientY);
+
+        // Query all meaningful elements and check bounding box intersection
+        const allMatching: { element: HTMLElement; rect: DOMRect }[] = [];
+        const selector =
+          "button, a, input, img, p, h1, h2, h3, h4, h5, h6, li, label, td, th";
+
+        document.querySelectorAll(selector).forEach((el) => {
+          if (!(el instanceof HTMLElement)) return;
+          if (
+            closestCrossingShadow(el, "[data-feedback-toolbar]") ||
+            closestCrossingShadow(el, "[data-annotation-marker]")
+          )
+            return;
+
+          const rect = el.getBoundingClientRect();
+          if (
+            rect.width > window.innerWidth * 0.8 &&
+            rect.height > window.innerHeight * 0.5
+          )
+            return;
+          if (rect.width < 10 || rect.height < 10) return;
+
+          // Check if element intersects with selection
+          if (
+            rect.left < right &&
+            rect.right > left &&
+            rect.top < bottom &&
+            rect.bottom > top
+          ) {
+            allMatching.push({ element: el, rect });
+          }
+        });
+
+        // Filter out parent elements that contain other matched elements
+        const finalElements = allMatching.filter(
+          ({ element: el }) =>
+            !allMatching.some(
+              ({ element: other }) => other !== el && el.contains(other),
+            ),
+        );
+
+        const x = (e.clientX / window.innerWidth) * 100;
+        const y = e.clientY + window.scrollY;
+
+        if (finalElements.length > 0) {
+          const bounds = finalElements.reduce(
+            (acc, { rect }) => ({
+              left: Math.min(acc.left, rect.left),
+              top: Math.min(acc.top, rect.top),
+              right: Math.max(acc.right, rect.right),
+              bottom: Math.max(acc.bottom, rect.bottom),
+            }),
+            {
+              left: Infinity,
+              top: Infinity,
+              right: -Infinity,
+              bottom: -Infinity,
+            },
+          );
+
+          const elementNames = finalElements
+            .slice(0, 5)
+            .map(({ element }) => identifyElement(element).name)
+            .join(", ");
+          const suffix =
+            finalElements.length > 5
+              ? ` +${finalElements.length - 5} more`
+              : "";
+
+          // Capture computed styles from first element - filtered for popup, full for forensic output
+          const firstElement = finalElements[0].element;
+          const firstElementComputedStyles =
+            getDetailedComputedStyles(firstElement);
+          const firstElementComputedStylesStr =
+            getForensicComputedStyles(firstElement);
+
+          setPendingAnnotation({
+            x,
+            y,
+            clientY: e.clientY,
+            element: `${finalElements.length} elements: ${elementNames}${suffix}`,
+            elementPath: "multi-select",
+            boundingBox: {
+              x: bounds.left,
+              y: bounds.top + window.scrollY,
+              width: bounds.right - bounds.left,
+              height: bounds.bottom - bounds.top,
+            },
+            isMultiSelect: true,
+            // Forensic data from first element
+            fullPath: getFullElementPath(firstElement),
+            accessibility: getAccessibilityInfo(firstElement),
+            computedStyles: firstElementComputedStylesStr,
+            computedStylesObj: firstElementComputedStyles,
+            nearbyElements: getNearbyElements(firstElement),
+            cssClasses: getElementClasses(firstElement),
+            nearbyText: getNearbyText(firstElement),
+            sourceFile: detectSourceFile(firstElement),
+          });
+        } else {
+          // No elements selected, but allow annotation on empty area
+          const width = Math.abs(right - left);
+          const height = Math.abs(bottom - top);
+
+          // Only create if drag area is meaningful size (not just a click)
+          if (width > 20 && height > 20) {
+            setPendingAnnotation({
+              x,
+              y,
+              clientY: e.clientY,
+              element: "Area selection",
+              elementPath: `region at (${Math.round(left)}, ${Math.round(top)})`,
+              boundingBox: {
+                x: left,
+                y: top + window.scrollY,
+                width,
+                height,
+              },
+              isMultiSelect: true,
+            });
+          }
+        }
+        setHoverInfo(null);
+      } else if (wasDragging) {
+        justFinishedDragRef.current = true;
+      }
+
+      mouseDownPosRef.current = null;
+      dragStartRef.current = null;
+      setIsDragging(false);
+      // Clear highlights container
+      if (highlightsContainerRef.current) {
+        highlightsContainerRef.current.innerHTML = "";
+      }
+    };
+
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, [isActive, isDragging]);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      if (e.key === "Escape") {
+        // Exit layout mode first if active
+        if (isDesignMode) {
+          if (activeDesignComponent) {
+            setActiveDesignComponent(null);
+          } else {
+            closeDesignMode();
+          }
+          return;
+        }
+        // Exit draw mode first if active
+        if (isDrawMode) {
+          setIsDrawMode(false);
+          return;
+        }
+        // Clear multi-select if active
+        if (pendingMultiSelectElements.length > 0) {
+          setPendingMultiSelectElements([]);
+          return;
+        }
+        if (pendingAnnotation) {
+          // Let popup handle
+        } else if (isActive) {
+          hideTooltipsUntilMouseLeave();
+          setIsActive(false);
+        }
+      }
+
+      // Cmd+Shift+F / Ctrl+Shift+F to toggle feedback mode
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        hideTooltipsUntilMouseLeave();
+        if (isActive) {
+          deactivate();
+        } else {
+          setIsActive(true);
+        }
+        return;
+      }
+
+      // Skip other shortcuts if typing or modifier keys are held
+      if (isTyping || e.metaKey || e.ctrlKey) return;
+
+      // "P" to toggle pause/freeze
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        hideTooltipsUntilMouseLeave();
+        toggleFreeze();
+      }
+
+      // "L" to toggle layout mode
+      if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        hideTooltipsUntilMouseLeave();
+        if (isDrawMode) setIsDrawMode(false);
+        if (showSettings) setShowSettings(false);
+        if (pendingAnnotation) cancelAnnotation();
+        if (isDesignMode) {
+          closeDesignMode();
+        } else {
+          setIsDesignMode(true);
+        }
+      }
+
+      // "H" to toggle marker visibility
+      if (e.key === "h" || e.key === "H") {
+        if (annotations.length > 0) {
+          e.preventDefault();
+          hideTooltipsUntilMouseLeave();
+          setShowMarkers((prev) => !prev);
+        }
+      }
+
+      // "C" to copy output
+      if (e.key === "c" || e.key === "C") {
+        if (annotations.length > 0 || designPlacements.length > 0 || rearrangeState) {
+          e.preventDefault();
+          hideTooltipsUntilMouseLeave();
+          copyOutput();
+        }
+      }
+
+      // "X" to clear all
+      if (e.key === "x" || e.key === "X") {
+        if (annotations.length > 0 || designPlacements.length > 0 || rearrangeState) {
+          e.preventDefault();
+          hideTooltipsUntilMouseLeave();
+          clearAll();
+          if (designPlacements.length > 0) setDesignPlacements([]);
+          if (rearrangeState) setRearrangeState(null);
+        }
+      }
+
+      // "S" to send annotations
+      if (e.key === "s" || e.key === "S") {
+        const hasValidWebhook =
+          isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "");
+        if (
+          annotations.length > 0 &&
+          hasValidWebhook &&
+          sendState === "idle"
+        ) {
+          e.preventDefault();
+          hideTooltipsUntilMouseLeave();
+          sendToWebhook();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isActive,
+    isDrawMode,
+    isDesignMode,
+    activeDesignComponent,
+    designPlacements,
+    rearrangeState,
+    pendingAnnotation,
+    annotations.length,
+    settings.webhookUrl,
+    webhookUrl,
+    sendState,
+    sendToWebhook,
+    toggleFreeze,
+    copyOutput,
+    clearAll,
+    pendingMultiSelectElements,
+  ]);
+
+  return {};
+}

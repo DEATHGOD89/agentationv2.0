@@ -1,0 +1,26 @@
+{
+  "name": "agentation-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter agentation watch & pnpm --filter feedback-tool-example dev",
+    "build": "pnpm --filter agentation build",
+    "example": "pnpm --filter feedback-tool-example dev",
+    "pack": "cd package && pnpm pack",
+    "mcp": "pnpm --filter agentation-mcp start",
+    "publish:agentation": "pnpm --filter agentation publish --access public",
+    "publish:mcp": "pnpm --filter agentation-mcp publish --access public",
+    "publish:all": "pnpm publish:agentation && pnpm publish:mcp"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "@parcel/watcher"
+    ]
+  },
+  "devDependencies": {
+    "ts-morph": "^28.0.0",
+    "tsx": "^4.23.1"
+  }
+}

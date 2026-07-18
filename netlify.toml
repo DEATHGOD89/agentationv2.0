@@ -1,0 +1,12 @@
+[build]
+  # Build from the monorepo root so pnpm can resolve all workspace packages
+  base = "/"
+  
+  # Build the agentation package first, then build the Next.js example site
+  command = "pnpm --filter agentation build && pnpm --filter feedback-tool-example build"
+  
+  # The output directory for the Next.js site
+  publish = "package/example/.next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
