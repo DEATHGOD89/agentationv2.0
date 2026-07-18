@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "noImplicitAny": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
