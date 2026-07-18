@@ -1,12 +1,13 @@
 [build]
-  # Build from the monorepo root so pnpm can resolve all workspace packages
-  base = "/"
+  # Set the base directory to the Next.js app so Netlify's Next.js plugin works correctly
+  base = "package/example"
   
-  # Build the agentation package first, then build the Next.js example site
-  command = "pnpm --filter agentation build && pnpm --filter feedback-tool-example build"
+  # Build the workspace package first, then the Next.js app
+  command = "pnpm --filter agentation build && pnpm run build"
   
-  # The output directory for the Next.js site
-  publish = "package/example/.next"
+  # Netlify usually auto-detects this for Next.js, but good to be explicit
+  publish = ".next"
 
+# Let Netlify handle Next.js perfectly
 [[plugins]]
   package = "@netlify/plugin-nextjs"
